@@ -23,7 +23,6 @@ class MainActivity : ComponentActivity() {
     // 신호 구독은 서비스가 시작될 때 한 번 하므로, 권한 결과가 나온 뒤에 시작해야 속도가 반영된다
     private val requestSpeed = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         TripService.start(this)
-        signalCheck.start()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
