@@ -11,6 +11,9 @@
     <!-- AAOS 차량 속성: 속도(런타임 권한), 주차브레이크·시동 -->
     <uses-permission android:name="android.car.permission.CAR_SPEED" />
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
+    <!-- 앱이 꺼져도 주행 기록 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
         android:name=".SalesDriveApp"
@@ -29,5 +32,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".trip.TripService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="차량 주행을 자동 기록해 운행기록부를 만든다" />
+        </service>
     </application>
 </manifest>

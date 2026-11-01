@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.salesdrive.trip.TripService
 import com.salesdrive.ui.signal.SignalCheckScreen
 import com.salesdrive.ui.signal.SignalCheckViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -18,8 +19,10 @@ class MainActivity : ComponentActivity() {
 
     private val signalCheck: SignalCheckViewModel by viewModels()
 
-    // 속도는 런타임 권한. 거부해도 기어로 대체 판단하므로 결과와 상관없이 시작한다
+    // 속도는 런타임 권한. 거부해도 기어로 대체 판단하므로 결과와 상관없이 기록을 시작한다.
+    // 신호 구독은 서비스가 시작될 때 한 번 하므로, 권한 결과가 나온 뒤에 시작해야 속도가 반영된다
     private val requestSpeed = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        TripService.start(this)
         signalCheck.start()
     }
 
