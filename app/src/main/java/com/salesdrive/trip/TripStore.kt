@@ -10,6 +10,6 @@ interface TripStore {
 
     suspend fun startTrip(at: VehicleSnapshot): Long
 
-    /** 열린 주행이 없으면 아무것도 하지 않는다 */
-    suspend fun endTrip(at: VehicleSnapshot)
+    /** 닫은 주행의 id. 열린 주행이 없으면 아무것도 하지 않고 null */
+    suspend fun endTrip(at: VehicleSnapshot): Long?
 }

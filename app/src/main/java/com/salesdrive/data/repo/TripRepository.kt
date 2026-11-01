@@ -40,8 +40,8 @@ class TripRepository @Inject constructor(
         ),
     )
 
-    override suspend fun endTrip(at: VehicleSnapshot) {
-        val open = tripDao.findOpen() ?: return
+    override suspend fun endTrip(at: VehicleSnapshot): Long? {
+        val open = tripDao.findOpen() ?: return null
         tripDao.update(
             open.copy(
                 endedAt = Instant.ofEpochMilli(at.timestampMs),
@@ -50,6 +50,7 @@ class TripRepository @Inject constructor(
                 endLng = at.location?.lng,
             ),
         )
+        return open.id
     }
 
     // TODO: 설정 화면의 차량 등록, READY의 운전자 선택이 생기면 그 값을 쓴다. 그전까지는 기본값 하나를 만들어 둔다
