@@ -11,7 +11,7 @@ data class GeoPoint(val lat: Double, val lng: Double)
 data class VehicleSnapshot(
     val timestampMs: Long,
     val ignitionOn: Boolean?,
-    val speedKmh: Float,
+    val speedKmh: Float?,
     val gear: Gear,
     val parkingBrakeOn: Boolean?,
     val odometerKm: Double,

@@ -9,6 +9,7 @@ plugins {
 android {
     namespace = "com.salesdrive"
     compileSdk = 35
+    useLibrary("android.car")
 
     defaultConfig {
         applicationId = "com.salesdrive"
@@ -63,6 +64,7 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.pleos.vehicle)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

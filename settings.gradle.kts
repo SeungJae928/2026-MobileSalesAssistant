@@ -11,7 +11,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // TODO: Pleos Connect SDK 저장소 (Playground 가이드 확인 후 추가)
+        maven { url = uri("https://nexus-playground.pleos.ai/repository/maven-releases/") }
     }
 }
 
