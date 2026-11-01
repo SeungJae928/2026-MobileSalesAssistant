@@ -44,6 +44,7 @@ data class Transition(val state: TripState, val effects: List<TripEffect> = empt
  * 순수 함수 상태머신. 시간은 스냅샷의 timestampMs만 쓰므로 Fake 재생 속도와 무관하게 같은 결과가 나온다.
  *
  * 시동 신호를 읽을 수 없으면(ignitionOn == null) 첫 신호를 시동으로 보고, 기어를 읽을 수 없으면 속도만으로 출발을 판단한다.
+ * 속도를 읽을 수 없으면(speedKmh == null) D·R단을 주행 중으로 본다. 이때 신호 대기는 DRIVING으로 남고, P단부터 정차로 판단한다.
  */
 class TripStateMachine(private val config: TripConfig = TripConfig()) {
 
@@ -56,7 +57,7 @@ class TripStateMachine(private val config: TripConfig = TripConfig()) {
     private fun onSignal(state: TripState, s: VehicleSnapshot): Transition {
         if (s.ignitionOn == false) return onIgnitionOff(state, s)
 
-        val moving = s.speedKmh > config.movingSpeedKmh
+        val moving = s.speedKmh?.let { it > config.movingSpeedKmh } ?: (s.gear == Gear.D || s.gear == Gear.R)
         return when (state.phase) {
             TripPhase.IDLE -> Transition(TripState(TripPhase.READY))
 

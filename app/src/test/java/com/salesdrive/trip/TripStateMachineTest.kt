@@ -15,7 +15,7 @@ class TripStateMachineTest {
 
     private fun snap(
         t: Long,
-        speed: Float = 0f,
+        speed: Float? = 0f,
         gear: Gear = Gear.D,
         brake: Boolean? = false,
         ignition: Boolean? = true,
@@ -115,6 +115,29 @@ class TripStateMachineTest {
         val (state, effects) = run(TripState(TripPhase.PAUSED), snap(0, ignition = false))
         assertEquals(TripPhase.IDLE, state.phase)
         assertTrue(effects.single() is TripEffect.EndTrip)
+    }
+
+    @Test fun `without speed, gear alone drives a full trip`() {
+        val (state, effects) = run(
+            TripState(TripPhase.READY),
+            snap(0, speed = null, gear = Gear.D, odo = 100.0),
+            snap(600, speed = null, gear = Gear.D, odo = 110.0),
+            snap(601, speed = null, gear = Gear.P, odo = 110.0),
+            snap(631, speed = null, gear = Gear.P, odo = 110.0),
+        )
+        assertEquals(TripPhase.ASKING, state.phase)
+        val start = effects.filterIsInstance<TripEffect.StartTrip>().single().at
+        val end = effects.filterIsInstance<TripEffect.EndTrip>().single().at
+        assertEquals(10.0, end.odometerKm - start.odometerKm, 0.0)
+    }
+
+    @Test fun `without speed, waiting in D stays DRIVING`() {
+        val (state, effects) = run(
+            TripState(TripPhase.DRIVING),
+            *Array(120) { snap(it.toLong(), speed = null, gear = Gear.D) },
+        )
+        assertEquals(TripPhase.DRIVING, state.phase)
+        assertTrue(effects.isEmpty())
     }
 
     @Test fun `demo scenario records exactly one 30km trip`() = runTest {
