@@ -14,6 +14,15 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** 음성 질문 쪽으로 보내는 요청 */
+sealed interface VisitPrompt {
+    /** 방금 끝난 주행 [tripId]의 방문 내용을 묻는다. 닫을 주행이 없었으면 null */
+    data class Ask(val tripId: Long?) : VisitPrompt
+
+    /** 질문 도중 다시 출발하거나 시동이 꺼짐 */
+    data object Cancel : VisitPrompt
+}
+
 data class RecorderState(
     val trip: TripState = TripState(),
     val snapshot: VehicleSnapshot? = null,
@@ -35,9 +44,11 @@ class TripRecorder @Inject constructor(
     private val _state = MutableStateFlow(RecorderState())
     val state: StateFlow<RecorderState> = _state.asStateFlow()
 
-    /** [TripEffect.AskVisit] / [TripEffect.CancelVisitPrompt]. 음성 질문 쪽이 구독한다 */
-    private val _visitPrompts = MutableSharedFlow<TripEffect>(extraBufferCapacity = 8)
-    val visitPrompts: SharedFlow<TripEffect> = _visitPrompts.asSharedFlow()
+    private val _visitPrompts = MutableSharedFlow<VisitPrompt>(extraBufferCapacity = 8)
+    val visitPrompts: SharedFlow<VisitPrompt> = _visitPrompts.asSharedFlow()
+
+    /** EndTrip과 AskVisit은 같은 전이에서 연달아 나오므로, 닫은 주행 id를 잠시 들고 있다가 질문에 붙인다 */
+    private var lastEndedTripId: Long? = null
 
     /**
      * 신호가 끊길 때까지 기록한다. 서비스 코루틴에서 호출.
@@ -69,8 +80,9 @@ class TripRecorder @Inject constructor(
     private suspend fun apply(effect: TripEffect) {
         when (effect) {
             is TripEffect.StartTrip -> Log.i(TAG, "trip #${store.startTrip(effect.at)} started")
-            is TripEffect.EndTrip -> store.endTrip(effect.at)
-            TripEffect.AskVisit, TripEffect.CancelVisitPrompt -> _visitPrompts.emit(effect)
+            is TripEffect.EndTrip -> lastEndedTripId = store.endTrip(effect.at)
+            TripEffect.AskVisit -> _visitPrompts.emit(VisitPrompt.Ask(lastEndedTripId))
+            TripEffect.CancelVisitPrompt -> _visitPrompts.emit(VisitPrompt.Cancel)
         }
     }
 

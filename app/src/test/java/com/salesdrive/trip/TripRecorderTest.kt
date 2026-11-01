@@ -31,9 +31,10 @@ class TripRecorderTest {
             return id
         }
 
-        override suspend fun endTrip(at: VehicleSnapshot) {
-            val open = openTrip() ?: return
+        override suspend fun endTrip(at: VehicleSnapshot): Long? {
+            val open = openTrip() ?: return null
             trips[trips.indexOf(open)] = open.copy(endedAt = Instant.ofEpochMilli(at.timestampMs), odoEndKm = at.odometerKm)
+            return open.id
         }
     }
 
@@ -50,7 +51,7 @@ class TripRecorderTest {
             startTimeMs = 0,
         )
         val recorder = TripRecorder(source, store)
-        val prompts = mutableListOf<TripEffect>()
+        val prompts = mutableListOf<VisitPrompt>()
         val promptJob = launch(UnconfinedTestDispatcher(testScheduler)) { recorder.visitPrompts.toList(prompts) }
 
         recorder.run()
@@ -58,7 +59,7 @@ class TripRecorderTest {
 
         val trip = store.trips.single()
         assertEquals(30.0, trip.odoEndKm!! - trip.odoStartKm, 0.1)
-        assertEquals(listOf<TripEffect>(TripEffect.AskVisit), prompts)
+        assertEquals(listOf<VisitPrompt>(VisitPrompt.Ask(tripId = 1)), prompts)
         assertEquals(TripPhase.ASKING, recorder.state.value.trip.phase)
 
         recorder.finishVisitPrompt()
