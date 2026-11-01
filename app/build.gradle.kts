@@ -9,6 +9,7 @@ plugins {
 android {
     namespace = "com.salesdrive"
     compileSdk = 35
+    useLibrary("android.car")
 
     defaultConfig {
         applicationId = "com.salesdrive"

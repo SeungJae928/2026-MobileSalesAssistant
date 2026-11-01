@@ -1,8 +1,10 @@
 package com.salesdrive
 
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.room.Room
 import com.salesdrive.data.db.SalesDriveDatabase
+import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
 import com.salesdrive.vehicle.fake.FakeVehicleSource
 import dagger.Module
@@ -25,11 +27,16 @@ object AppModule {
     @Provides fun profileDao(db: SalesDriveDatabase) = db.profileDao()
     @Provides fun vehicleDao(db: SalesDriveDatabase) = db.vehicleDao()
 
-    // TODO: Pleos 신호 확인 후 실제 구현으로 교체. 그전까지는 Fake 시나리오로 동작
+    /** 차량(Pleos 에뮬레이터 포함)에서는 실제 신호, 폰 AVD에서는 Fake 시나리오 */
     @Provides @Singleton
-    fun vehicleSignalSource(): VehicleSignalSource = FakeVehicleSource(
-        scenario = FakeVehicleSource.DEMO_SCENARIO,
-        from = FakeVehicleSource.DEMO_FROM,
-        to = FakeVehicleSource.DEMO_TO,
-    )
+    fun vehicleSignalSource(@ApplicationContext context: Context): VehicleSignalSource =
+        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            PleosVehicleSource(context)
+        } else {
+            FakeVehicleSource(
+                scenario = FakeVehicleSource.DEMO_SCENARIO,
+                from = FakeVehicleSource.DEMO_FROM,
+                to = FakeVehicleSource.DEMO_TO,
+            )
+        }
 }
