@@ -70,6 +70,8 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.pleos.vehicle)
+    implementation(libs.pleos.tts)
+    implementation(libs.pleos.stt)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
