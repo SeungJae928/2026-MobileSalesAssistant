@@ -5,10 +5,16 @@ import android.content.pm.PackageManager
 import androidx.room.Room
 import com.salesdrive.data.db.SalesDriveDatabase
 import com.salesdrive.data.repo.TripRepository
+import com.salesdrive.data.repo.VisitRepository
 import com.salesdrive.trip.TripStore
 import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
 import com.salesdrive.vehicle.fake.FakeVehicleSource
+import com.salesdrive.voice.PleosSpeechCapture
+import com.salesdrive.voice.PleosVoicePrompter
+import com.salesdrive.voice.SpeechCapture
+import com.salesdrive.voice.VisitStore
+import com.salesdrive.voice.VoicePrompter
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -48,4 +54,7 @@ object AppModule {
 @InstallIn(SingletonComponent::class)
 abstract class BindingModule {
     @Binds abstract fun tripStore(repository: TripRepository): TripStore
+    @Binds abstract fun visitStore(repository: VisitRepository): VisitStore
+    @Binds abstract fun voicePrompter(impl: PleosVoicePrompter): VoicePrompter
+    @Binds abstract fun speechCapture(impl: PleosSpeechCapture): SpeechCapture
 }

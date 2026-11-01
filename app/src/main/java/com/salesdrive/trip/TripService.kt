@@ -12,21 +12,24 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import com.salesdrive.voice.VisitInterviewer
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** 앱 화면이 닫혀도 주행 기록을 계속하는 포그라운드 서비스. 하는 일은 [TripRecorder.run]뿐이다 */
+/** 앱 화면이 닫혀도 주행 기록과 도착 시 음성 질문을 계속하는 포그라운드 서비스 */
 @AndroidEntryPoint
 class TripService : LifecycleService() {
 
     @Inject lateinit var recorder: TripRecorder
+    @Inject lateinit var interviewer: VisitInterviewer
 
     override fun onCreate() {
         super.onCreate()
         val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(), type)
         lifecycleScope.launch { recorder.run() }
+        lifecycleScope.launch { interviewer.run() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
