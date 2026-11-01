@@ -37,6 +37,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // 단위 테스트에서 android.util.Log 호출이 예외 없이 무시되도록
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 ksp {

@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.room.Room
 import com.salesdrive.data.db.SalesDriveDatabase
+import com.salesdrive.data.repo.TripRepository
+import com.salesdrive.trip.TripStore
 import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
 import com.salesdrive.vehicle.fake.FakeVehicleSource
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,4 +42,10 @@ object AppModule {
                 to = FakeVehicleSource.DEMO_TO,
             )
         }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class BindingModule {
+    @Binds abstract fun tripStore(repository: TripRepository): TripStore
 }
