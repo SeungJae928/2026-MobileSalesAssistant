@@ -18,6 +18,9 @@ interface TripDao {
 
     @Query("SELECT * FROM Trip WHERE startedAt >= :from AND startedAt < :until ORDER BY startedAt")
     fun observeBetween(from: Instant, until: Instant): Flow<List<Trip>>
+
+    @Query("SELECT * FROM Trip ORDER BY startedAt DESC LIMIT :limit")
+    fun observeRecent(limit: Int): Flow<List<Trip>>
 }
 
 @Dao
@@ -40,6 +43,9 @@ interface ProfileDao {
 
     @Query("SELECT * FROM DriverProfile ORDER BY name")
     fun observeAll(): Flow<List<DriverProfile>>
+
+    @Query("SELECT * FROM DriverProfile ORDER BY id LIMIT 1")
+    suspend fun first(): DriverProfile?
 }
 
 @Dao
