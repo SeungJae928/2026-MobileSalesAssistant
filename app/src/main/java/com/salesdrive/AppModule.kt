@@ -32,6 +32,7 @@ object AppModule {
         Room.databaseBuilder(context, SalesDriveDatabase::class.java, "salesdrive.db").build()
 
     @Provides fun tripDao(db: SalesDriveDatabase) = db.tripDao()
+    @Provides fun stopDao(db: SalesDriveDatabase) = db.stopDao()
     @Provides fun visitDao(db: SalesDriveDatabase) = db.visitDao()
     @Provides fun profileDao(db: SalesDriveDatabase) = db.profileDao()
     @Provides fun vehicleDao(db: SalesDriveDatabase) = db.vehicleDao()

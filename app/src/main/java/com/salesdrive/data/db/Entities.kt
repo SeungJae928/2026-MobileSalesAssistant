@@ -49,6 +49,22 @@ data class Trip(
     val note: String? = null,            // 기록부 비고란
 )
 
+/** 주행 도중 들른 경유 정차(휴게소·졸음쉼터 등). 주행을 끊지 않고 운행기록부 비고로 남긴다 */
+@Entity(
+    foreignKeys = [ForeignKey(entity = Trip::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("tripId")],
+)
+data class TripStop(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val tripId: Long,
+    val arrivedAt: Instant,
+    val departedAt: Instant,
+    val odoKm: Double,
+    val lat: Double?,
+    val lng: Double?,
+    val name: String? = null,            // NaviHelper 경유지명
+)
+
 @Entity(
     foreignKeys = [ForeignKey(entity = Trip::class, parentColumns = ["id"], childColumns = ["tripId"], onDelete = ForeignKey.CASCADE)],
     indices = [Index("tripId"), Index("client"), Index("followUpDate")],
