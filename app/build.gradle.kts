@@ -85,6 +85,8 @@ dependencies {
     implementation(libs.pleos.tts)
     implementation(libs.pleos.stt)
     implementation(libs.pleos.navi)
+    implementation(libs.pleos.llm)
+    implementation(libs.gson)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

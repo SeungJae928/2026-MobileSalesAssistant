@@ -16,6 +16,8 @@
     <uses-permission android:name="pleos.car.permission.STT_SERVICE" />
     <!-- Pleos NaviHelper: 목적지·남은 거리·도착 이벤트(get*Info, 리스너) -->
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
+    <!-- LLM(On-device)로 방문 원문을 구조화 -->
+    <uses-permission android:name="pleos.car.permission.LLM_SERVICE" />
     <!-- 앱이 꺼져도 주행 기록 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
