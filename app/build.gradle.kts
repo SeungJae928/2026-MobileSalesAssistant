@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
