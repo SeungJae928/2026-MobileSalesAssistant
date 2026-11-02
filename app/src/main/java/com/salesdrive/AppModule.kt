@@ -10,6 +10,8 @@ import com.salesdrive.navi.NaviSource
 import com.salesdrive.navi.NoNaviSource
 import com.salesdrive.navi.PleosNaviSource
 import com.salesdrive.trip.TripStore
+import com.salesdrive.vehicle.CarDrivingRestriction
+import com.salesdrive.vehicle.DrivingRestriction
 import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
 import com.salesdrive.vehicle.fake.FakeVehicleSource
@@ -52,6 +54,9 @@ object AppModule {
     /** Pleos LLM으로 먼저 파싱하고, 실패하면 규칙 기반 파서 */
     @Provides @Singleton
     fun visitParser(llm: PleosLlmClient): VisitParser = FallbackVisitParser(LlmVisitParser(llm), RuleVisitParser)
+
+    @Provides @Singleton
+    fun drivingRestriction(@ApplicationContext context: Context): DrivingRestriction = CarDrivingRestriction(context)
 
     /** 차량(Pleos 에뮬레이터 포함)에서는 실제 신호, 폰 AVD에서는 Fake 시나리오 */
     @Provides @Singleton
