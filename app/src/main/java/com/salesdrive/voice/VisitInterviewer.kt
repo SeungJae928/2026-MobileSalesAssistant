@@ -30,7 +30,7 @@ class VisitInterviewer @Inject constructor(
         recorder.visitPrompts.collectLatest { prompt ->
             when (prompt) {
                 VisitPrompt.Confirm -> confirm()
-                is VisitPrompt.Ask -> interview(prompt.tripId, prompt.answer)
+                is VisitPrompt.Ask -> interview(prompt.tripId, prompt.answer, question(prompt))
                 VisitPrompt.Cancel -> Unit
             }
         }
@@ -51,9 +51,9 @@ class VisitInterviewer @Inject constructor(
         }
     }
 
-    internal suspend fun interview(tripId: Long?, answer: String? = null) {
+    internal suspend fun interview(tripId: Long?, answer: String? = null, question: String = QUESTION) {
         if (tripId != null) {
-            val content = answer ?: askWithRetry()
+            val content = answer ?: askWithRetry(question)
             if (content != null) {
                 val visitId = visits.saveRaw(tripId, content)
                 Log.i(TAG, "visit #$visitId saved for trip #$tripId")
@@ -65,8 +65,8 @@ class VisitInterviewer @Inject constructor(
         recorder.finishVisitPrompt()
     }
 
-    private suspend fun askWithRetry(): String? {
-        prompter.speak(QUESTION)
+    private suspend fun askWithRetry(question: String): String? {
+        prompter.speak(question)
         listenForContent()?.let { return it }
         prompter.speak(RETRY)
         return listenForContent()
@@ -81,10 +81,16 @@ class VisitInterviewer @Inject constructor(
         const val CONFIRM = "도착하셨네요. 방문 기록할까요?"
         const val DECLINED = "알겠습니다. 경유지로 보고 계속 기록할게요."
 
-        // TODO: NaviHelper 목적지가 있으면 "OO빌딩 방문 내용 말씀해 주세요."
         const val QUESTION = "방문 내용 말씀해 주세요."
         const val RETRY = "방문 내용을 한 번 더 말씀해 주세요."
         const val SAVED = "기록했습니다."
         const val LATER = "나중에 화면에서 입력해 주세요."
+
+        /** 내비가 도착을 알려 확인 질문 없이 온 경우 인사부터 한다 */
+        fun question(ask: VisitPrompt.Ask): String = when {
+            !ask.greet -> QUESTION
+            ask.place != null -> "${ask.place} 도착하셨네요. $QUESTION"
+            else -> "도착하셨네요. $QUESTION"
+        }
     }
 }

@@ -12,6 +12,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import com.salesdrive.navi.NaviSource
 import com.salesdrive.voice.VisitInterviewer
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -23,13 +24,20 @@ class TripService : LifecycleService() {
 
     @Inject lateinit var recorder: TripRecorder
     @Inject lateinit var interviewer: VisitInterviewer
+    @Inject lateinit var navi: NaviSource
 
     override fun onCreate() {
         super.onCreate()
         val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(), type)
+        navi.start()
         lifecycleScope.launch { recorder.run() }
         lifecycleScope.launch { interviewer.run() }
+    }
+
+    override fun onDestroy() {
+        navi.stop()
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
