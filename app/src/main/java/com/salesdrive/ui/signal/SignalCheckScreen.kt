@@ -16,7 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.salesdrive.data.db.Trip
+import com.salesdrive.data.db.TripSummary
 import com.salesdrive.trip.StopDecision
 import com.salesdrive.trip.TripPhase
 import java.time.ZoneId
@@ -75,10 +75,12 @@ private fun VisitButtons(ui: SignalCheckUi, onRecord: () -> Unit, onSkip: () -> 
 }
 
 @Composable
-private fun TripRow(trip: Trip) {
+private fun TripRow(summary: TripSummary) {
+    val trip = summary.trip
     val end = trip.endedAt?.let(TIME::format) ?: "주행 중"
     val distance = trip.odoEndKm?.let { "%.1f km".format(it - trip.odoStartKm) } ?: "-"
-    Text("#${trip.id}  ${TIME.format(trip.startedAt)} → $end  ·  $distance  ·  ${trip.purpose}", style = MaterialTheme.typography.bodyLarge)
+    val stops = if (summary.stopCount > 0) "  ·  경유 ${summary.stopCount}회" else ""
+    Text("#${trip.id}  ${TIME.format(trip.startedAt)} → $end  ·  $distance$stops  ·  ${trip.purpose}", style = MaterialTheme.typography.bodyLarge)
 }
 
 @Composable

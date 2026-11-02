@@ -2,7 +2,7 @@ package com.salesdrive.ui.signal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.salesdrive.data.db.Trip
+import com.salesdrive.data.db.TripSummary
 import com.salesdrive.data.repo.TripRepository
 import com.salesdrive.trip.RecorderState
 import com.salesdrive.trip.StopDecision
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 data class SignalCheckUi(
     val recorder: RecorderState = RecorderState(),
-    val recentTrips: List<Trip> = emptyList(),
+    val recentTrips: List<TripSummary> = emptyList(),
 ) {
     private val phase get() = recorder.trip.phase
     private val parkedNow get() = recorder.snapshot?.let { it.gear == Gear.P || it.parkingBrakeOn == true } == true

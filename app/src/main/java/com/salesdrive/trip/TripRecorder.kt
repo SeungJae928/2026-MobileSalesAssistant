@@ -109,6 +109,7 @@ class TripRecorder @Inject constructor(
             is TripEffect.StartTrip -> Log.i(TAG, "trip #${store.startTrip(effect.at)} started")
             is TripEffect.EndTrip -> lastEndedTripId = store.endTrip(effect.at)
             is TripEffect.StopDetected -> _visitPrompts.emit(VisitPrompt.Confirm)
+            is TripEffect.RecordWaypoint -> store.addStop(effect.arrived, effect.departed)
             TripEffect.AskVisit -> {
                 val tripId = lastEndedTripId ?: store.lastEndedTripId()
                 _visitPrompts.emit(VisitPrompt.Ask(tripId, pendingAnswer))

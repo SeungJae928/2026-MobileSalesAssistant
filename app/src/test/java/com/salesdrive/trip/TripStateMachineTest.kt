@@ -177,9 +177,29 @@ class TripStateMachineTest {
     }
 
     @Test fun `driving off from an unanswered stop also continues the trip`() {
-        val (state, effects) = run(stopped, snap(300, speed = 40f))
+        val departure = snap(300, speed = 40f)
+        val (state, effects) = run(stopped, departure)
         assertEquals(TripPhase.DRIVING, state.phase)
-        assertEquals(listOf<TripEffect>(TripEffect.CancelVisitPrompt), effects)
+        assertEquals(
+            listOf(TripEffect.CancelVisitPrompt, TripEffect.RecordWaypoint(stopped.stopAt!!, departure)),
+            effects,
+        )
+    }
+
+    @Test fun `rest stop with engine off keeps one trip and records the stop`() {
+        val waypoint = machine.reduce(stopped, TripEvent.VisitDeclined).state
+
+        val (state, effects) = run(
+            waypoint,
+            snap(600, ignition = false),          // 휴게소에서 시동 끄고 식사
+            snap(2400, ignition = true, gear = Gear.P),
+            snap(2410, speed = 30f, odo = 150.0), // 다시 출발
+        )
+        assertEquals(TripPhase.DRIVING, state.phase)
+        assertTrue(effects.none { it is TripEffect.EndTrip || it is TripEffect.StartTrip })
+        val stop = effects.filterIsInstance<TripEffect.RecordWaypoint>().single()
+        assertEquals(30_000L, stop.arrived.timestampMs)
+        assertEquals(2_410_000L, stop.departed.timestampMs)
     }
 
     @Test fun `ignition off at an unanswered stop ends the trip there without asking`() {

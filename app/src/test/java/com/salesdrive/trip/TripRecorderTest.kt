@@ -37,6 +37,11 @@ class TripRecorderTest {
             return open.id
         }
 
+        val stops = mutableListOf<Pair<Long, VehicleSnapshot>>()
+        override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot) {
+            openTrip()?.let { stops += it.id to arrived }
+        }
+
         override suspend fun lastEndedTripId() = trips.lastOrNull { it.endedAt != null }?.id
     }
 
@@ -115,6 +120,20 @@ class TripRecorderTest {
             listOf(VisitPrompt.Confirm, VisitPrompt.Ask(1, "A상사 김부장 미팅"), VisitPrompt.Ask(1, null)),
             prompts,
         )
+    }
+
+    @Test fun `leaving a stop without confirming records a waypoint on the same trip`() = runTest {
+        val store = MemoryStore()
+        val drive = (0..9).map { t -> VehicleSnapshot(t * 1000L, true, 60f, Gear.D, false, 100.0 + t, null) }
+        val rest = (10..45).map { t -> VehicleSnapshot(t * 1000L, true, 0f, Gear.P, false, 110.0, null) }
+        val again = (46..50).map { t -> VehicleSnapshot(t * 1000L, true, 60f, Gear.D, false, 110.0 + t - 46, null) }
+
+        val recorder = TripRecorder(ListSource(drive + rest + again), store)
+        recorder.run()
+
+        assertEquals(1, store.trips.size)
+        assertNull(store.trips.single().endedAt)
+        assertEquals(1L to 110.0, store.stops.single().let { it.first to it.second.odometerKm })
     }
 
     private companion object {

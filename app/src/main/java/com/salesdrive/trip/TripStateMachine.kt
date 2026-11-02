@@ -7,6 +7,7 @@ import com.salesdrive.vehicle.VehicleSnapshot
  * 주차가 확정되면 바로 도착으로 보지 않고 STOPPED에서 운전자의 결정을 기다린다.
  * 휴게소·졸음쉼터처럼 잠깐 서는 곳에서 주행이 끊기지 않도록, 도착은 운전자가 확인(음성 "응"·버튼)하거나 시동을 끌 때만 확정한다.
  * 확정되면 그 정차 시점으로 주행을 닫고 ASKING에서 방문 내용을 묻는다.
+ * 도착이 아닌 채로 다시 출발하면 그 정차는 경유지로 남고 주행은 이어진다.
  */
 enum class TripPhase { IDLE, READY, DRIVING, PAUSED, STOPPED, ASKING }
 
@@ -48,6 +49,9 @@ sealed interface TripEffect {
 
     /** 주차가 확정됨. 경유인지 도착인지 운전자에게 확인한다 */
     data class StopDetected(val at: VehicleSnapshot) : TripEffect
+
+    /** 도착 확인 없이 다시 출발함. 열린 주행에 경유 정차로 남긴다 */
+    data class RecordWaypoint(val arrived: VehicleSnapshot, val departed: VehicleSnapshot) : TripEffect
     data object AskVisit : TripEffect
 
     /** 확인·질문 도중 다시 출발하거나 시동이 꺼져 진행 중인 음성 대화를 접는다 */
@@ -78,7 +82,9 @@ class TripStateMachine(private val config: TripConfig = TripConfig()) {
 
         val moving = s.speedKmh?.let { it > config.movingSpeedKmh } ?: (s.gear == Gear.D || s.gear == Gear.R)
         return when (state.phase) {
-            TripPhase.IDLE -> Transition(TripState(TripPhase.READY))
+            // 경유지에서 시동을 껐다 켠 경우 그 정차로 돌아간다
+            TripPhase.IDLE ->
+                if (state.stopAt != null) Transition(state.copy(phase = TripPhase.STOPPED)) else Transition(TripState(TripPhase.READY))
 
             TripPhase.READY ->
                 if (moving || s.gear == Gear.D || s.gear == Gear.R) {
@@ -95,7 +101,14 @@ class TripStateMachine(private val config: TripConfig = TripConfig()) {
 
             // 도착 확인 없이 다시 출발하면 경유 정차였던 것. 같은 주행을 이어 간다
             TripPhase.STOPPED ->
-                if (moving) Transition(TripState(TripPhase.DRIVING), listOf(TripEffect.CancelVisitPrompt)) else Transition(state)
+                if (moving) {
+                    Transition(
+                        TripState(TripPhase.DRIVING),
+                        listOfNotNull(TripEffect.CancelVisitPrompt, state.stopAt?.let { TripEffect.RecordWaypoint(it, s) }),
+                    )
+                } else {
+                    Transition(state)
+                }
 
             TripPhase.ASKING ->
                 if (moving) {
@@ -138,15 +151,21 @@ class TripStateMachine(private val config: TripConfig = TripConfig()) {
     /**
      * 시동이 꺼지면 헤드유닛도 곧 꺼지므로 질문하지 않는다. 방문 내용은 나중에 화면에서 입력.
      * 정차 중(STOPPED)에 시동을 끄면 그곳을 도착지로 보고 정차 확정 시점으로 주행을 닫는다.
+     * 단, 운전자가 경유지라고 답한 곳(휴게소에서 시동 끄고 식사 등)은 주행을 열어 둔 채 정차 정보를 들고 IDLE로 간다.
      */
     private fun onIgnitionOff(state: TripState, s: VehicleSnapshot): Transition = when (state.phase) {
         TripPhase.IDLE -> Transition(state)
         TripPhase.READY -> Transition(TripState(TripPhase.IDLE))
         TripPhase.DRIVING, TripPhase.PAUSED -> Transition(TripState(TripPhase.IDLE), listOf(TripEffect.EndTrip(s)))
-        TripPhase.STOPPED -> Transition(
-            TripState(TripPhase.IDLE),
-            listOf(TripEffect.CancelVisitPrompt, TripEffect.EndTrip(state.stopAt ?: s)),
-        )
+        TripPhase.STOPPED ->
+            if (state.stopDecision == StopDecision.WAYPOINT) {
+                Transition(state.copy(phase = TripPhase.IDLE), listOf(TripEffect.CancelVisitPrompt))
+            } else {
+                Transition(
+                    TripState(TripPhase.IDLE),
+                    listOf(TripEffect.CancelVisitPrompt, TripEffect.EndTrip(state.stopAt ?: s)),
+                )
+            }
         TripPhase.ASKING -> Transition(TripState(TripPhase.IDLE), listOf(TripEffect.CancelVisitPrompt))
     }
 
