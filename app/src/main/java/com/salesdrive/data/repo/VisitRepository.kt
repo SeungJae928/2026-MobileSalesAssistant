@@ -10,6 +10,7 @@ import com.salesdrive.voice.VisitStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -31,6 +32,13 @@ class VisitRepository @Inject constructor(
         scope.launch { organize(id) }
         return id
     }
+
+    fun observeByTrip(tripId: Long): Flow<List<Visit>> = visitDao.observeByTrip(tripId)
+
+    fun observeUpcoming(from: LocalDate, limit: Int): Flow<List<Visit>> = visitDao.observeUpcoming(from, limit)
+
+    /** 확인 화면에서 사람이 고친 값 */
+    suspend fun update(visit: Visit) = visitDao.update(visit)
 
     /**
      * 원문을 파싱해 방문 항목을 채운다. 발화에서 목적(출퇴근·개인)이 드러나면 주행 목적도 고친다.

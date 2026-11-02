@@ -14,6 +14,10 @@ import com.salesdrive.data.db.VehicleDao
 import com.salesdrive.trip.TripStore
 import com.salesdrive.vehicle.VehicleSnapshot
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.getAndUpdate
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,21 +32,47 @@ class TripRepository @Inject constructor(
 
     fun observeRecent(limit: Int): Flow<List<TripSummary>> = tripDao.observeRecentSummaries(limit)
 
+    fun observeBetween(from: Instant, until: Instant): Flow<List<TripSummary>> = tripDao.observeSummariesBetween(from, until)
+
+    fun observeTrip(id: Long): Flow<Trip?> = tripDao.observe(id)
+
+    fun observeStops(tripId: Long): Flow<List<TripStop>> = stopDao.observeByTrip(tripId)
+
+    suspend fun endedBetween(from: Instant, until: Instant): List<Trip> = tripDao.endedBetween(from, until)
+
+    private val _nextPurpose = MutableStateFlow<Purpose?>(null)
+
+    /** 출발 전 화면에서 고른 이번 주행 목적. 주행이 시작되면 그 주행에 들어가고 비워진다 */
+    val nextPurpose: StateFlow<Purpose?> = _nextPurpose.asStateFlow()
+
+    fun chooseNextPurpose(purpose: Purpose?) {
+        _nextPurpose.value = purpose
+    }
+
+    /** 기록 확인 화면에서 운전자가 직접 고친 목적. 이후 음성 파싱이 덮어쓰지 않는다 */
+    suspend fun setPurpose(tripId: Long, purpose: Purpose) {
+        val trip = tripDao.find(tripId) ?: return
+        tripDao.update(trip.copy(purpose = purpose, purposeSource = PurposeSource.USER_TAP))
+    }
+
     override suspend fun openTrip(): Trip? = tripDao.findOpen()
 
-    /** 목적은 출발 화면·음성으로 바로잡기 전까지 업무(BUSINESS) 기본값 */
-    override suspend fun startTrip(at: VehicleSnapshot): Long = tripDao.insert(
-        Trip(
-            vehicleId = currentVehicleId(),
-            driverId = currentDriverId(),
-            startedAt = Instant.ofEpochMilli(at.timestampMs),
-            odoStartKm = at.odometerKm,
-            startLat = at.location?.lat,
-            startLng = at.location?.lng,
-            purpose = Purpose.BUSINESS,
-            purposeSource = PurposeSource.DEFAULT,
-        ),
-    )
+    /** 출발 전에 고른 목적이 없으면 업무(BUSINESS) 기본값. 도착 후 음성으로 바로잡힐 수 있다 */
+    override suspend fun startTrip(at: VehicleSnapshot): Long {
+        val chosen = _nextPurpose.getAndUpdate { null }
+        return tripDao.insert(
+            Trip(
+                vehicleId = currentVehicleId(),
+                driverId = currentDriverId(),
+                startedAt = Instant.ofEpochMilli(at.timestampMs),
+                odoStartKm = at.odometerKm,
+                startLat = at.location?.lat,
+                startLng = at.location?.lng,
+                purpose = chosen ?: Purpose.BUSINESS,
+                purposeSource = if (chosen != null) PurposeSource.USER_TAP else PurposeSource.DEFAULT,
+            ),
+        )
+    }
 
     override suspend fun endTrip(at: VehicleSnapshot, destination: String?): Long? {
         val open = tripDao.findOpen() ?: return null
