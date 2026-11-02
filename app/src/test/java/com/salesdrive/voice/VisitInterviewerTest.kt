@@ -87,6 +87,15 @@ class VisitInterviewerTest {
         assertEquals(listOf(VisitInterviewer.QUESTION, VisitInterviewer.RETRY, VisitInterviewer.LATER), spoken.lines)
     }
 
+    @Test fun `a filler like 어 counts as silence`() = runTest {
+        val recorder = TripRecorder(ManualSource(), OneTripStore())
+        val visits = Visits()
+
+        VisitInterviewer(recorder, Spoken(), Script("어", "D상사 재계약 논의"), visits).interview(tripId = 7)
+
+        assertEquals(listOf(7L to "D상사 재계약 논의"), visits.saved)
+    }
+
     @Test fun `answer on retry is saved`() = runTest {
         val recorder = TripRecorder(ManualSource(), OneTripStore())
         val visits = Visits()
