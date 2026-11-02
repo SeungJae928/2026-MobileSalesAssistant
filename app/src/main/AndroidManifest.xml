@@ -34,6 +34,10 @@
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
+            <!-- 주행 중에는 "기록 중" 화면만 보여 주므로 주행 중 표시를 허용받는다 -->
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

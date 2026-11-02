@@ -17,6 +17,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.salesdrive.ui.driving.DrivingScreen
+import com.salesdrive.ui.driving.DrivingViewModel
 import com.salesdrive.ui.home.HomeScreen
 import com.salesdrive.ui.logbook.LogbookScreen
 import com.salesdrive.ui.review.TripDetailScreen
@@ -28,9 +31,17 @@ enum class Tab(val label: String, val icon: String) {
     SIGNAL("신호 확인", "🛠"),
 }
 
-/** 왼쪽 탭 + 본문. 주행 기록을 하나 고르면 본문 자리에 방문 기록 확인 화면이 뜬다 */
+/**
+ * 왼쪽 탭 + 본문. 주행 기록을 하나 고르면 본문 자리에 방문 기록 확인 화면이 뜬다.
+ * 주행 중에는 화면마다 따로 처리하지 않고 여기서 전체를 "기록 중" 화면으로 덮는다.
+ */
 @Composable
-fun AppRoot() {
+fun AppRoot(driving: DrivingViewModel = hiltViewModel()) {
+    val restricted by driving.restricted.collectAsStateWithLifecycle(initialValue = false)
+    if (restricted) {
+        DrivingScreen()
+        return
+    }
     var tab by rememberSaveable { mutableStateOf(Tab.HOME) }
     var openTrip by rememberSaveable { mutableStateOf<Long?>(null) }
 
