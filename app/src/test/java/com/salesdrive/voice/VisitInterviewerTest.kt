@@ -1,6 +1,7 @@
 package com.salesdrive.voice
 
 import com.salesdrive.data.db.Trip
+import com.salesdrive.trip.StopDecision
 import com.salesdrive.trip.TripPhase
 import com.salesdrive.trip.TripRecorder
 import com.salesdrive.trip.TripStore
@@ -54,6 +55,7 @@ class VisitInterviewerTest {
         override suspend fun openTrip(): Trip? = null
         override suspend fun startTrip(at: VehicleSnapshot) = 7L
         override suspend fun endTrip(at: VehicleSnapshot) = 7L
+        override suspend fun lastEndedTripId() = 7L
     }
 
     private suspend fun ManualSource.driveAndArrive() {
@@ -94,7 +96,7 @@ class VisitInterviewerTest {
         assertEquals(listOf(7L to "개인 볼일"), visits.saved)
     }
 
-    @Test fun `arrival asks, answer returns recorder to READY`() = runTest {
+    @Test fun `content given at confirmation is saved without asking again`() = runTest {
         val source = ManualSource()
         val recorder = TripRecorder(source, OneTripStore())
         val visits = Visits()
@@ -110,6 +112,49 @@ class VisitInterviewerTest {
         jobs.forEach { it.cancel() }
     }
 
+    /** 도착 → 확인 질문까지 진행시키고, 대화 결과를 돌려준다 */
+    private suspend fun kotlinx.coroutines.test.TestScope.arriveWith(vararg answers: String?): Triple<TripRecorder, Spoken, Visits> {
+        val source = ManualSource()
+        val recorder = TripRecorder(source, OneTripStore())
+        val spoken = Spoken()
+        val visits = Visits()
+        val interviewer = VisitInterviewer(recorder, spoken, Script(*answers), visits)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val jobs = listOf(launch(dispatcher) { recorder.run() }, launch(dispatcher) { interviewer.run() })
+        source.driveAndArrive()
+        runCurrent()
+        jobs.forEach { it.cancel() }
+        return Triple(recorder, spoken, visits)
+    }
+
+    @Test fun `yes at confirmation leads to the visit question`() = runTest {
+        val (recorder, spoken, visits) = arriveWith("네", "C전자 박과장 데모")
+
+        assertEquals(listOf(7L to "C전자 박과장 데모"), visits.saved)
+        assertEquals(
+            listOf(VisitInterviewer.CONFIRM, VisitInterviewer.QUESTION, VisitInterviewer.SAVED),
+            spoken.lines,
+        )
+        assertEquals(TripPhase.READY, recorder.state.value.trip.phase)
+    }
+
+    @Test fun `no at confirmation keeps the trip going as a waypoint`() = runTest {
+        val (recorder, spoken, visits) = arriveWith("아니 휴게소야")
+
+        assertTrue(visits.saved.isEmpty())
+        assertEquals(listOf(VisitInterviewer.CONFIRM, VisitInterviewer.DECLINED), spoken.lines)
+        assertEquals(TripPhase.STOPPED, recorder.state.value.trip.phase)
+        assertEquals(StopDecision.WAYPOINT, recorder.state.value.trip.stopDecision)
+    }
+
+    @Test fun `silence at confirmation leaves the decision to the screen`() = runTest {
+        val (recorder, spoken, _) = arriveWith(null)
+
+        assertEquals(listOf(VisitInterviewer.CONFIRM), spoken.lines)
+        assertEquals(TripPhase.STOPPED, recorder.state.value.trip.phase)
+        assertEquals(StopDecision.UNDECIDED, recorder.state.value.trip.stopDecision)
+    }
+
     @Test fun `driving off while listening cancels the interview`() = runTest {
         val source = ManualSource()
         val recorder = TripRecorder(source, OneTripStore())
@@ -121,7 +166,7 @@ class VisitInterviewerTest {
 
         source.driveAndArrive()
         runCurrent()
-        assertEquals(TripPhase.ASKING, recorder.state.value.trip.phase)
+        assertEquals(TripPhase.STOPPED, recorder.state.value.trip.phase)
 
         source.emit(140, 30f, Gear.D)
         runCurrent()

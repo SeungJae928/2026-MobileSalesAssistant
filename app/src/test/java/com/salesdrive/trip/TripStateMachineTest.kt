@@ -60,7 +60,7 @@ class TripStateMachineTest {
         assertTrue(effects.isEmpty())
     }
 
-    @Test fun `parked for hold time confirms arrival and asks`() {
+    @Test fun `parked for hold time stops and asks for confirmation`() {
         val (before, none) = run(
             TripState(TripPhase.DRIVING),
             snap(0, speed = 0f),
@@ -71,9 +71,9 @@ class TripStateMachineTest {
         assertTrue(none.isEmpty())
 
         val (after, effects) = run(before, snap(31, gear = Gear.P, brake = true, odo = 130.0))
-        assertEquals(TripPhase.ASKING, after.phase)
-        assertEquals(130.0, (effects[0] as TripEffect.EndTrip).at.odometerKm, 0.0)
-        assertEquals(TripEffect.AskVisit, effects[1])
+        assertEquals(TripPhase.STOPPED, after.phase)
+        assertEquals(130.0, (effects.single() as TripEffect.StopDetected).at.odometerKm, 0.0)
+        assertEquals(StopDecision.UNDECIDED, after.stopDecision)
     }
 
     @Test fun `parking brake alone counts as parked when gear is unknown`() {
@@ -82,8 +82,8 @@ class TripStateMachineTest {
             snap(0, gear = Gear.UNKNOWN, brake = true),
             snap(30, gear = Gear.UNKNOWN, brake = true),
         )
-        assertEquals(TripPhase.ASKING, state.phase)
-        assertEquals(2, effects.size)
+        assertEquals(TripPhase.STOPPED, state.phase)
+        assertTrue(effects.single() is TripEffect.StopDetected)
     }
 
     @Test fun `releasing park resets the hold timer`() {
@@ -125,9 +125,9 @@ class TripStateMachineTest {
             snap(601, speed = null, gear = Gear.P, odo = 110.0),
             snap(631, speed = null, gear = Gear.P, odo = 110.0),
         )
-        assertEquals(TripPhase.ASKING, state.phase)
+        assertEquals(TripPhase.STOPPED, state.phase)
         val start = effects.filterIsInstance<TripEffect.StartTrip>().single().at
-        val end = effects.filterIsInstance<TripEffect.EndTrip>().single().at
+        val end = effects.filterIsInstance<TripEffect.StopDetected>().single().at
         assertEquals(10.0, end.odometerKm - start.odometerKm, 0.0)
     }
 
@@ -149,10 +149,65 @@ class TripStateMachineTest {
         )
         val (state, effects) = run(TripState(), *source.snapshots.toList().toTypedArray())
 
-        assertEquals(TripPhase.ASKING, state.phase)
+        assertEquals(TripPhase.STOPPED, state.phase)
         val start = effects.filterIsInstance<TripEffect.StartTrip>().single().at
-        val end = effects.filterIsInstance<TripEffect.EndTrip>().single().at
-        assertEquals(30.0, end.odometerKm - start.odometerKm, 0.1)
-        assertEquals(1, effects.count { it == TripEffect.AskVisit })
+        val stop = effects.filterIsInstance<TripEffect.StopDetected>().single().at
+        assertEquals(30.0, stop.odometerKm - start.odometerKm, 0.1)
+        assertTrue(effects.none { it is TripEffect.EndTrip })
+    }
+
+    // --- 정차 후 운전자의 결정 ---
+
+    private val stopped = TripState(TripPhase.STOPPED, stopAt = snap(30, gear = Gear.P, odo = 150.0))
+
+    @Test fun `confirming a stop ends the trip at the stop time and asks`() {
+        val tr = machine.reduce(stopped, TripEvent.VisitConfirmed(now = snap(45, gear = Gear.P, odo = 150.0)))
+        assertEquals(TripPhase.ASKING, tr.state.phase)
+        assertEquals(30_000L, (tr.effects[0] as TripEffect.EndTrip).at.timestampMs)
+        assertEquals(TripEffect.AskVisit, tr.effects[1])
+    }
+
+    @Test fun `declined stop becomes a waypoint and the same trip continues`() {
+        val declined = machine.reduce(stopped, TripEvent.VisitDeclined).state
+        assertEquals(StopDecision.WAYPOINT, declined.stopDecision)
+
+        val (state, effects) = run(declined, snap(600, speed = 50f, odo = 150.0))
+        assertEquals(TripPhase.DRIVING, state.phase)
+        assertTrue(effects.none { it is TripEffect.EndTrip || it is TripEffect.StartTrip })
+    }
+
+    @Test fun `driving off from an unanswered stop also continues the trip`() {
+        val (state, effects) = run(stopped, snap(300, speed = 40f))
+        assertEquals(TripPhase.DRIVING, state.phase)
+        assertEquals(listOf<TripEffect>(TripEffect.CancelVisitPrompt), effects)
+    }
+
+    @Test fun `ignition off at an unanswered stop ends the trip there without asking`() {
+        val (state, effects) = run(stopped, snap(600, ignition = false, odo = 150.0))
+        assertEquals(TripPhase.IDLE, state.phase)
+        assertEquals(30_000L, effects.filterIsInstance<TripEffect.EndTrip>().single().at.timestampMs)
+        assertTrue(effects.none { it == TripEffect.AskVisit })
+    }
+
+    @Test fun `button right after parking ends the trip now`() {
+        val tr = machine.reduce(TripState(TripPhase.PAUSED), TripEvent.VisitConfirmed(now = snap(5, gear = Gear.P, odo = 120.0)))
+        assertEquals(TripPhase.ASKING, tr.state.phase)
+        assertEquals(120.0, (tr.effects[0] as TripEffect.EndTrip).at.odometerKm, 0.0)
+    }
+
+    @Test fun `button at a traffic light or while driving is ignored`() {
+        val light = machine.reduce(TripState(TripPhase.PAUSED), TripEvent.VisitConfirmed(now = snap(5, gear = Gear.D)))
+        assertEquals(TripPhase.PAUSED, light.state.phase)
+        assertTrue(light.effects.isEmpty())
+
+        val driving = machine.reduce(TripState(TripPhase.DRIVING), TripEvent.VisitConfirmed(now = snap(5, speed = 60f)))
+        assertEquals(TripPhase.DRIVING, driving.state.phase)
+        assertTrue(driving.effects.isEmpty())
+    }
+
+    @Test fun `button while waiting adds a visit to the last trip`() {
+        val tr = machine.reduce(TripState(TripPhase.READY), TripEvent.VisitConfirmed(now = snap(5, gear = Gear.P)))
+        assertEquals(TripPhase.ASKING, tr.state.phase)
+        assertEquals(listOf<TripEffect>(TripEffect.AskVisit), tr.effects)
     }
 }

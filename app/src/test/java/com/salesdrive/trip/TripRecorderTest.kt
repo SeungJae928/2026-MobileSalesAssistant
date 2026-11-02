@@ -36,13 +36,15 @@ class TripRecorderTest {
             trips[trips.indexOf(open)] = open.copy(endedAt = Instant.ofEpochMilli(at.timestampMs), odoEndKm = at.odometerKm)
             return open.id
         }
+
+        override suspend fun lastEndedTripId() = trips.lastOrNull { it.endedAt != null }?.id
     }
 
     private class ListSource(snapshots: List<VehicleSnapshot>) : VehicleSignalSource {
         override val snapshots: Flow<VehicleSnapshot> = snapshots.asFlow()
     }
 
-    @Test fun `demo scenario stores one closed 30km trip and asks once`() = runTest {
+    @Test fun `demo scenario asks to confirm, and confirming closes one 30km trip`() = runTest {
         val store = MemoryStore()
         val source = FakeVehicleSource(
             scenario = FakeVehicleSource.DEMO_SCENARIO,
@@ -55,11 +57,15 @@ class TripRecorderTest {
         val promptJob = launch(UnconfinedTestDispatcher(testScheduler)) { recorder.visitPrompts.toList(prompts) }
 
         recorder.run()
+        assertEquals(TripPhase.STOPPED, recorder.state.value.trip.phase)
+        assertNull(store.trips.single().endedAt)
+
+        recorder.confirmVisit()
         promptJob.cancel()
 
         val trip = store.trips.single()
         assertEquals(30.0, trip.odoEndKm!! - trip.odoStartKm, 0.1)
-        assertEquals(listOf<VisitPrompt>(VisitPrompt.Ask(tripId = 1)), prompts)
+        assertEquals(listOf(VisitPrompt.Confirm, VisitPrompt.Ask(tripId = 1)), prompts)
         assertEquals(TripPhase.ASKING, recorder.state.value.trip.phase)
 
         recorder.finishVisitPrompt()
@@ -72,7 +78,9 @@ class TripRecorderTest {
             VehicleSnapshot(t * 1000L, true, 0f, Gear.P, true, 512.0, null)
         }
 
-        TripRecorder(ListSource(parked), store).run()
+        val recorder = TripRecorder(ListSource(parked), store)
+        recorder.run()
+        recorder.confirmVisit()
 
         val trip = store.trips.single()
         assertEquals(512.0, trip.odoEndKm!!, 0.0)
@@ -88,6 +96,25 @@ class TripRecorderTest {
         assertEquals(TripPhase.READY, recorder.state.value.trip.phase)
         assertEquals(0, store.trips.size)
         assertNull(recorder.state.value.lastEffect)
+    }
+
+    @Test fun `answer given at confirmation is passed along with the ask`() = runTest {
+        val store = MemoryStore(listOf(trip(1, odoStart = 500.0, startedAt = 0)))
+        val parked = (0..31).map { t -> VehicleSnapshot(t * 1000L, true, 0f, Gear.P, true, 512.0, null) }
+        val recorder = TripRecorder(ListSource(parked), store)
+        val prompts = mutableListOf<VisitPrompt>()
+        val promptJob = launch(UnconfinedTestDispatcher(testScheduler)) { recorder.visitPrompts.toList(prompts) }
+
+        recorder.run()
+        recorder.confirmVisit(answer = "A상사 김부장 미팅")
+        recorder.finishVisitPrompt()
+        recorder.confirmVisit() // 대기 중 버튼: 같은 주행에 방문 하나 더
+        promptJob.cancel()
+
+        assertEquals(
+            listOf(VisitPrompt.Confirm, VisitPrompt.Ask(1, "A상사 김부장 미팅"), VisitPrompt.Ask(1, null)),
+            prompts,
+        )
     }
 
     private companion object {
