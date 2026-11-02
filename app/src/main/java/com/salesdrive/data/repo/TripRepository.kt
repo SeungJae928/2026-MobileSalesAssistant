@@ -53,6 +53,8 @@ class TripRepository @Inject constructor(
         return open.id
     }
 
+    override suspend fun lastEndedTripId(): Long? = tripDao.lastEndedId()
+
     // TODO: 설정 화면의 차량 등록, READY의 운전자 선택이 생기면 그 값을 쓴다. 그전까지는 기본값 하나를 만들어 둔다
     private suspend fun currentVehicleId(): Long =
         vehicleDao.all().firstOrNull()?.id ?: vehicleDao.insert(Vehicle(plateNumber = "미등록", model = null))

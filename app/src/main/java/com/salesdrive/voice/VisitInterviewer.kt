@@ -13,9 +13,10 @@ interface VisitStore {
 }
 
 /**
- * 도착이 확정되면 방문 내용을 한 번 묻고, 답을 원문 그대로 저장한다.
- * 무응답이면 한 번만 다시 묻고, 그래도 없으면 정차 중 화면에서 입력하도록 남겨 둔다.
- * 질문 도중 다시 출발하면([VisitPrompt.Cancel]) 진행 중인 질문을 바로 접는다.
+ * 정차가 확정되면 먼저 방문을 기록할지 묻고([VisitPrompt.Confirm]), 운전자가 원하면 방문 내용을 받아 원문 그대로 저장한다.
+ * - 확인 질문에 답이 없으면 아무것도 정하지 않고 화면 버튼에 맡긴다. 그대로 출발하면 경유 정차로 남는다.
+ * - 방문 내용 질문에 무응답이면 한 번만 다시 묻고, 그래도 없으면 화면에서 입력하도록 남겨 둔다.
+ * - 대화 도중 다시 출발하면([VisitPrompt.Cancel]) 진행 중인 대화를 바로 접는다.
  */
 @Singleton
 class VisitInterviewer @Inject constructor(
@@ -24,18 +25,37 @@ class VisitInterviewer @Inject constructor(
     private val capture: SpeechCapture,
     private val visits: VisitStore,
 ) {
-    /** 서비스 코루틴에서 호출. 새 요청이 오면 이전 질문은 취소된다 */
+    /** 서비스 코루틴에서 호출. 새 요청이 오면 이전 대화는 취소된다 */
     suspend fun run() {
         recorder.visitPrompts.collectLatest { prompt ->
-            if (prompt is VisitPrompt.Ask) interview(prompt.tripId)
+            when (prompt) {
+                VisitPrompt.Confirm -> confirm()
+                is VisitPrompt.Ask -> interview(prompt.tripId, prompt.answer)
+                VisitPrompt.Cancel -> Unit
+            }
         }
     }
 
-    internal suspend fun interview(tripId: Long?) {
+    /** "응"이면 기록이 확정되어 곧 [VisitPrompt.Ask]가 오고, 이 대화는 그쪽으로 넘어간다 */
+    internal suspend fun confirm() {
+        prompter.speak(CONFIRM)
+        val heard = capture.listen() ?: return
+        when (ConfirmReply.classify(heard)) {
+            ConfirmReply.YES -> recorder.confirmVisit()
+            ConfirmReply.CONTENT -> recorder.confirmVisit(answer = heard)
+            ConfirmReply.NO -> {
+                recorder.declineVisit()
+                prompter.speak(DECLINED)
+            }
+            null -> Unit
+        }
+    }
+
+    internal suspend fun interview(tripId: Long?, answer: String? = null) {
         if (tripId != null) {
-            val answer = askWithRetry()
-            if (answer != null) {
-                val visitId = visits.saveRaw(tripId, answer)
+            val content = answer ?: askWithRetry()
+            if (content != null) {
+                val visitId = visits.saveRaw(tripId, content)
                 Log.i(TAG, "visit #$visitId saved for trip #$tripId")
                 prompter.speak(SAVED)
             } else {
@@ -55,8 +75,11 @@ class VisitInterviewer @Inject constructor(
     internal companion object {
         private const val TAG = "VisitInterviewer"
 
-        // TODO: NaviHelper 목적지가 있으면 "OO빌딩 도착하셨네요. 방문 내용 말씀해 주세요."
-        const val QUESTION = "도착하셨네요. 방문 내용 말씀해 주세요."
+        const val CONFIRM = "도착하셨네요. 방문 기록할까요?"
+        const val DECLINED = "알겠습니다. 경유지로 보고 계속 기록할게요."
+
+        // TODO: NaviHelper 목적지가 있으면 "OO빌딩 방문 내용 말씀해 주세요."
+        const val QUESTION = "방문 내용 말씀해 주세요."
         const val RETRY = "방문 내용을 한 번 더 말씀해 주세요."
         const val SAVED = "기록했습니다."
         const val LATER = "나중에 화면에서 입력해 주세요."
