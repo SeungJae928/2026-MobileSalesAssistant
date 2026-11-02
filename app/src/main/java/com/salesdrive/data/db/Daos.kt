@@ -14,6 +14,9 @@ interface TripDao {
     @Update suspend fun update(trip: Trip)
 
     /** 앱이 죽었다 살아났을 때 이어서 기록할 진행 중 주행 */
+    @Query("SELECT * FROM Trip WHERE id = :id")
+    suspend fun find(id: Long): Trip?
+
     @Query("SELECT * FROM Trip WHERE endedAt IS NULL ORDER BY startedAt DESC LIMIT 1")
     suspend fun findOpen(): Trip?
 
@@ -51,6 +54,9 @@ interface StopDao {
 interface VisitDao {
     @Insert suspend fun insert(visit: Visit): Long
     @Update suspend fun update(visit: Visit)
+
+    @Query("SELECT * FROM Visit WHERE id = :id")
+    suspend fun find(id: Long): Visit?
 
     @Query("SELECT * FROM Visit WHERE tripId = :tripId")
     suspend fun findByTrip(tripId: Long): List<Visit>

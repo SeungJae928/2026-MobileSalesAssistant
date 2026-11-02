@@ -13,9 +13,14 @@ import com.salesdrive.trip.TripStore
 import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
 import com.salesdrive.vehicle.fake.FakeVehicleSource
+import com.salesdrive.voice.FallbackVisitParser
+import com.salesdrive.voice.LlmVisitParser
+import com.salesdrive.voice.PleosLlmClient
 import com.salesdrive.voice.PleosSpeechCapture
+import com.salesdrive.voice.RuleVisitParser
 import com.salesdrive.voice.PleosVoicePrompter
 import com.salesdrive.voice.SpeechCapture
+import com.salesdrive.voice.VisitParser
 import com.salesdrive.voice.VisitStore
 import com.salesdrive.voice.VoicePrompter
 import dagger.Binds
@@ -43,6 +48,10 @@ object AppModule {
     @Provides @Singleton
     fun naviSource(@ApplicationContext context: Context): NaviSource =
         if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) PleosNaviSource(context) else NoNaviSource()
+
+    /** Pleos LLM으로 먼저 파싱하고, 실패하면 규칙 기반 파서 */
+    @Provides @Singleton
+    fun visitParser(llm: PleosLlmClient): VisitParser = FallbackVisitParser(LlmVisitParser(llm), RuleVisitParser)
 
     /** 차량(Pleos 에뮬레이터 포함)에서는 실제 신호, 폰 AVD에서는 Fake 시나리오 */
     @Provides @Singleton
