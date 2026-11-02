@@ -106,6 +106,9 @@ interface ProfileDao {
     @Query("SELECT * FROM DriverProfile ORDER BY name")
     fun observeAll(): Flow<List<DriverProfile>>
 
+    @Query("SELECT * FROM DriverProfile")
+    suspend fun all(): List<DriverProfile>
+
     @Query("SELECT * FROM DriverProfile ORDER BY id LIMIT 1")
     suspend fun first(): DriverProfile?
 }
