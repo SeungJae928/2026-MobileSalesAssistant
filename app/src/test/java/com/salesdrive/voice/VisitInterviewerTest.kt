@@ -1,10 +1,12 @@
 package com.salesdrive.voice
 
 import com.salesdrive.data.db.Trip
+import com.salesdrive.navi.NoNaviSource
 import com.salesdrive.trip.StopDecision
 import com.salesdrive.trip.TripPhase
 import com.salesdrive.trip.TripRecorder
 import com.salesdrive.trip.TripStore
+import com.salesdrive.trip.VisitPrompt
 import com.salesdrive.vehicle.Gear
 import com.salesdrive.vehicle.VehicleSignalSource
 import com.salesdrive.vehicle.VehicleSnapshot
@@ -54,9 +56,9 @@ class VisitInterviewerTest {
     private class OneTripStore : TripStore {
         override suspend fun openTrip(): Trip? = null
         override suspend fun startTrip(at: VehicleSnapshot) = 7L
-        override suspend fun endTrip(at: VehicleSnapshot) = 7L
+        override suspend fun endTrip(at: VehicleSnapshot, destination: String?) = 7L
         override suspend fun lastEndedTripId() = 7L
-        override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot) = Unit
+        override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot, name: String?) = Unit
     }
 
     private suspend fun ManualSource.driveAndArrive() {
@@ -67,7 +69,7 @@ class VisitInterviewerTest {
     }
 
     @Test fun `answer on first try is saved for the ended trip`() = runTest {
-        val recorder = TripRecorder(ManualSource(), OneTripStore())
+        val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
         val spoken = Spoken()
         val visits = Visits()
 
@@ -78,7 +80,7 @@ class VisitInterviewerTest {
     }
 
     @Test fun `silence is asked again once, then left for later`() = runTest {
-        val recorder = TripRecorder(ManualSource(), OneTripStore())
+        val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
         val spoken = Spoken()
         val visits = Visits()
 
@@ -89,7 +91,7 @@ class VisitInterviewerTest {
     }
 
     @Test fun `a filler like 어 counts as silence`() = runTest {
-        val recorder = TripRecorder(ManualSource(), OneTripStore())
+        val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
         val visits = Visits()
 
         VisitInterviewer(recorder, Spoken(), Script("어", "D상사 재계약 논의"), visits).interview(tripId = 7)
@@ -97,8 +99,17 @@ class VisitInterviewerTest {
         assertEquals(listOf(7L to "D상사 재계약 논의"), visits.saved)
     }
 
+    @Test fun `question greets with the place only when navi confirmed the arrival`() {
+        assertEquals(VisitInterviewer.QUESTION, VisitInterviewer.question(VisitPrompt.Ask(7)))
+        assertEquals(
+            "A상사 본사 도착하셨네요. 방문 내용 말씀해 주세요.",
+            VisitInterviewer.question(VisitPrompt.Ask(7, place = "A상사 본사", greet = true)),
+        )
+        assertEquals("도착하셨네요. 방문 내용 말씀해 주세요.", VisitInterviewer.question(VisitPrompt.Ask(7, greet = true)))
+    }
+
     @Test fun `answer on retry is saved`() = runTest {
-        val recorder = TripRecorder(ManualSource(), OneTripStore())
+        val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
         val visits = Visits()
 
         VisitInterviewer(recorder, Spoken(), Script(null, "개인 볼일"), visits).interview(tripId = 7)
@@ -108,7 +119,7 @@ class VisitInterviewerTest {
 
     @Test fun `content given at confirmation is saved without asking again`() = runTest {
         val source = ManualSource()
-        val recorder = TripRecorder(source, OneTripStore())
+        val recorder = TripRecorder(source, OneTripStore(), NoNaviSource())
         val visits = Visits()
         val interviewer = VisitInterviewer(recorder, Spoken(), Script("B물산 견적 회신"), visits)
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
@@ -125,7 +136,7 @@ class VisitInterviewerTest {
     /** 도착 → 확인 질문까지 진행시키고, 대화 결과를 돌려준다 */
     private suspend fun kotlinx.coroutines.test.TestScope.arriveWith(vararg answers: String?): Triple<TripRecorder, Spoken, Visits> {
         val source = ManualSource()
-        val recorder = TripRecorder(source, OneTripStore())
+        val recorder = TripRecorder(source, OneTripStore(), NoNaviSource())
         val spoken = Spoken()
         val visits = Visits()
         val interviewer = VisitInterviewer(recorder, spoken, Script(*answers), visits)
@@ -167,7 +178,7 @@ class VisitInterviewerTest {
 
     @Test fun `driving off while listening cancels the interview`() = runTest {
         val source = ManualSource()
-        val recorder = TripRecorder(source, OneTripStore())
+        val recorder = TripRecorder(source, OneTripStore(), NoNaviSource())
         val capture = Script().apply { hangOnNext = true }
         val visits = Visits()
         val interviewer = VisitInterviewer(recorder, Spoken(), capture, visits)

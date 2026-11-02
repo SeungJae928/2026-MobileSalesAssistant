@@ -44,7 +44,7 @@ class TripRepository @Inject constructor(
         ),
     )
 
-    override suspend fun endTrip(at: VehicleSnapshot): Long? {
+    override suspend fun endTrip(at: VehicleSnapshot, destination: String?): Long? {
         val open = tripDao.findOpen() ?: return null
         tripDao.update(
             open.copy(
@@ -52,12 +52,13 @@ class TripRepository @Inject constructor(
                 odoEndKm = at.odometerKm,
                 endLat = at.location?.lat,
                 endLng = at.location?.lng,
+                naviDestination = destination ?: open.naviDestination,
             ),
         )
         return open.id
     }
 
-    override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot) {
+    override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot, name: String?) {
         val open = tripDao.findOpen() ?: return
         stopDao.insert(
             TripStop(
@@ -67,6 +68,7 @@ class TripRepository @Inject constructor(
                 odoKm = arrived.odometerKm,
                 lat = arrived.location?.lat,
                 lng = arrived.location?.lng,
+                name = name,
             ),
         )
     }
