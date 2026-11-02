@@ -6,6 +6,9 @@ import androidx.room.Room
 import com.salesdrive.data.db.SalesDriveDatabase
 import com.salesdrive.data.repo.TripRepository
 import com.salesdrive.data.repo.VisitRepository
+import com.salesdrive.navi.NaviSource
+import com.salesdrive.navi.NoNaviSource
+import com.salesdrive.navi.PleosNaviSource
 import com.salesdrive.trip.TripStore
 import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
@@ -36,6 +39,10 @@ object AppModule {
     @Provides fun visitDao(db: SalesDriveDatabase) = db.visitDao()
     @Provides fun profileDao(db: SalesDriveDatabase) = db.profileDao()
     @Provides fun vehicleDao(db: SalesDriveDatabase) = db.vehicleDao()
+
+    @Provides @Singleton
+    fun naviSource(@ApplicationContext context: Context): NaviSource =
+        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) PleosNaviSource(context) else NoNaviSource()
 
     /** 차량(Pleos 에뮬레이터 포함)에서는 실제 신호, 폰 AVD에서는 Fake 시나리오 */
     @Provides @Singleton
