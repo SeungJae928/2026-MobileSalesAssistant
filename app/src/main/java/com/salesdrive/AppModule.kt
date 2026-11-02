@@ -14,6 +14,7 @@ import com.salesdrive.vehicle.CarDrivingRestriction
 import com.salesdrive.vehicle.DrivingRestriction
 import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
+import com.salesdrive.vehicle.fake.DemoSwitchSource
 import com.salesdrive.vehicle.fake.FakeVehicleSource
 import com.salesdrive.voice.FallbackVisitParser
 import com.salesdrive.voice.LlmVisitParser
@@ -58,10 +59,13 @@ object AppModule {
     @Provides @Singleton
     fun drivingRestriction(@ApplicationContext context: Context): DrivingRestriction = CarDrivingRestriction(context)
 
-    /** 차량(Pleos 에뮬레이터 포함)에서는 실제 신호, 폰 AVD에서는 Fake 시나리오 */
+    /**
+     * 차량(Pleos 에뮬레이터 포함)에서는 실제 신호, 폰 AVD에서는 Fake 시나리오.
+     * 어느 쪽이든 신호 확인 화면의 버튼으로 시연용 시나리오를 바꿔 끼울 수 있다.
+     */
     @Provides @Singleton
-    fun vehicleSignalSource(@ApplicationContext context: Context): VehicleSignalSource =
-        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+    fun demoSwitchSource(@ApplicationContext context: Context): DemoSwitchSource {
+        val real = if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
             PleosVehicleSource(context)
         } else {
             FakeVehicleSource(
@@ -70,6 +74,20 @@ object AppModule {
                 to = FakeVehicleSource.DEMO_TO,
             )
         }
+        return DemoSwitchSource(real) { startKm ->
+            FakeVehicleSource(
+                scenario = FakeVehicleSource.DEMO_VIDEO_SCENARIO,
+                from = FakeVehicleSource.DEMO_FROM,
+                to = FakeVehicleSource.DEMO_TO,
+                startOdometerKm = startKm,
+                speedUp = 1.0,
+                odometerScale = FakeVehicleSource.DEMO_ODOMETER_SCALE,
+            )
+        }
+    }
+
+    @Provides
+    fun vehicleSignalSource(source: DemoSwitchSource): VehicleSignalSource = source
 }
 
 @Module
