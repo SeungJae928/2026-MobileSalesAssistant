@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,6 +45,10 @@ fun SignalCheckScreen(viewModel: SignalCheckViewModel) {
             }
             Text(ui.recorder.phaseLabel, style = MaterialTheme.typography.titleMedium)
             VisitActions(ui.recorder, onRecord = viewModel::recordVisit, onSkip = viewModel::skipVisit)
+            OutlinedButton(onClick = viewModel::toggleDemo, modifier = Modifier.height(64.dp)) {
+                Text(if (ui.demoRunning) "■ 시연 종료 (실제 신호로)" else "▶ 시연 주행 재생", style = MaterialTheme.typography.titleLarge)
+            }
+            if (ui.demoRunning) Text("시연 시나리오 재생 중: 출발 → 약 30km → 도착 → 주차", style = MaterialTheme.typography.titleMedium)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("최근 주행", style = MaterialTheme.typography.headlineMedium)
