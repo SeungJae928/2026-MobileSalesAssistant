@@ -1,6 +1,7 @@
 package com.salesdrive.data.db
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
@@ -24,6 +25,26 @@ interface TripDao {
 
     @Query("SELECT * FROM Trip ORDER BY startedAt DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<Trip>>
+
+    @Query(
+        "SELECT Trip.*, (SELECT COUNT(*) FROM TripStop WHERE TripStop.tripId = Trip.id) AS stopCount " +
+            "FROM Trip ORDER BY startedAt DESC LIMIT :limit",
+    )
+    fun observeRecentSummaries(limit: Int): Flow<List<TripSummary>>
+}
+
+/** 목록 한 줄: 주행과 경유 정차 횟수 */
+data class TripSummary(
+    @Embedded val trip: Trip,
+    val stopCount: Int,
+)
+
+@Dao
+interface StopDao {
+    @Insert suspend fun insert(stop: TripStop): Long
+
+    @Query("SELECT * FROM TripStop WHERE tripId = :tripId ORDER BY arrivedAt")
+    suspend fun findByTrip(tripId: Long): List<TripStop>
 }
 
 @Dao
