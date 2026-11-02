@@ -1,7 +1,9 @@
 package com.salesdrive.voice
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConfirmReplyTest {
@@ -32,5 +34,13 @@ class ConfirmReplyTest {
         assertNull(ConfirmReply.classify(""))
         assertNull(ConfirmReply.classify(" . "))
         assertNull(ConfirmReply.classify("음"))
+        assertNull(ConfirmReply.classify("어"))   // 마이크 잡음이 "어"로 인식되어 기록이 확정되던 문제
+        assertNull(ConfirmReply.classify("음음"))
+        assertNull(ConfirmReply.classify("어..."))
+    }
+
+    @Test fun `fillers and bare acknowledgements are not visit content`() {
+        listOf("어", "음음", "네", "네네", "응", "아", "").forEach { assertTrue("\"$it\"", ConfirmReply.isFiller(it)) }
+        listOf("A상사 미팅", "어제 A상사 미팅 후속", "견적 회신").forEach { assertFalse("\"$it\"", ConfirmReply.isFiller(it)) }
     }
 }

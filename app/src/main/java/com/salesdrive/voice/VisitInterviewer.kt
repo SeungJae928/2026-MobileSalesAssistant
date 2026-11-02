@@ -67,10 +67,13 @@ class VisitInterviewer @Inject constructor(
 
     private suspend fun askWithRetry(): String? {
         prompter.speak(QUESTION)
-        capture.listen()?.let { return it }
+        listenForContent()?.let { return it }
         prompter.speak(RETRY)
-        return capture.listen()
+        return listenForContent()
     }
+
+    /** 군말·소음("어", "음")만 들렸으면 무응답과 같이 본다 */
+    private suspend fun listenForContent(): String? = capture.listen()?.takeUnless(ConfirmReply::isFiller)
 
     internal companion object {
         private const val TAG = "VisitInterviewer"
