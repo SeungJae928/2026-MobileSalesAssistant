@@ -7,8 +7,8 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [Trip::class, TripStop::class, Visit::class, DriverProfile::class, Vehicle::class],
-    version = 3,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    version = 4,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 @TypeConverters(Converters::class)
 abstract class SalesDriveDatabase : RoomDatabase() {

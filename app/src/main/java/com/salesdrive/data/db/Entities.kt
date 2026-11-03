@@ -14,8 +14,9 @@ enum class PurposeSource { USER_TAP, VOICE, DEFAULT }
 @Entity
 data class Vehicle(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val plateNumber: String,
-    val model: String?,
+    val plateNumber: String,             // 자동차등록번호. 입력 전에는 빈 문자열
+    val model: String?,                  // 차종
+    val company: String? = null,         // 운행기록부 상호(법인명)
 )
 
 @Entity

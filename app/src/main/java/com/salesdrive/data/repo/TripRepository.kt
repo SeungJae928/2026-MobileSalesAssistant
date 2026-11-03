@@ -7,8 +7,6 @@ import com.salesdrive.data.db.Trip
 import com.salesdrive.data.db.TripDao
 import com.salesdrive.data.db.TripStop
 import com.salesdrive.data.db.TripSummary
-import com.salesdrive.data.db.Vehicle
-import com.salesdrive.data.db.VehicleDao
 import com.salesdrive.trip.TripStore
 import com.salesdrive.vehicle.VehicleSnapshot
 import kotlinx.coroutines.flow.Flow
@@ -23,7 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class TripRepository @Inject constructor(
     private val tripDao: TripDao,
-    private val vehicleDao: VehicleDao,
+    private val vehicles: VehicleRepository,
     private val profiles: ProfileRepository,
     private val stopDao: StopDao,
 ) : TripStore {
@@ -103,7 +101,5 @@ class TripRepository @Inject constructor(
 
     override suspend fun lastEndedTripId(): Long? = tripDao.lastEndedId()
 
-    // TODO: 설정 화면에 차량 등록이 생기면 그 값을 쓴다. 그전까지는 기본값 하나를 만들어 둔다
-    private suspend fun currentVehicleId(): Long =
-        vehicleDao.all().firstOrNull()?.id ?: vehicleDao.insert(Vehicle(plateNumber = "미등록", model = null))
+    private suspend fun currentVehicleId(): Long = vehicles.current().id
 }

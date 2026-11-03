@@ -120,6 +120,14 @@ interface ProfileDao {
 interface VehicleDao {
     @Insert suspend fun insert(vehicle: Vehicle): Long
 
+    @Update suspend fun update(vehicle: Vehicle)
+
+    @Query("SELECT * FROM Vehicle ORDER BY id LIMIT 1")
+    suspend fun first(): Vehicle?
+
+    @Query("SELECT * FROM Vehicle ORDER BY id LIMIT 1")
+    fun observeFirst(): Flow<Vehicle?>
+
     @Query("SELECT * FROM Vehicle")
     suspend fun all(): List<Vehicle>
 }
