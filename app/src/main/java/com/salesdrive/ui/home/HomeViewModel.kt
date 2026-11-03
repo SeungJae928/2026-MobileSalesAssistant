@@ -7,6 +7,7 @@ import com.salesdrive.data.db.Purpose
 import com.salesdrive.data.db.TripSummary
 import com.salesdrive.data.db.Visit
 import com.salesdrive.data.repo.ProfileRepository
+import com.salesdrive.data.repo.VehicleRepository
 import com.salesdrive.data.repo.TripRepository
 import com.salesdrive.data.repo.needsSetup
 import com.salesdrive.data.repo.VisitRepository
@@ -39,6 +40,7 @@ class HomeViewModel @Inject constructor(
     private val trips: TripRepository,
     visits: VisitRepository,
     profiles: ProfileRepository,
+    vehicles: VehicleRepository,
 ) : ViewModel() {
 
     private val date = LocalDate.now(ZONE)
@@ -53,8 +55,8 @@ class HomeViewModel @Inject constructor(
         HomeUi(state, purpose, today, Mileage.totals(month.map { it.trip }), upcoming)
     }
 
-    val ui: StateFlow<HomeUi> = combine(base, profiles.observe()) { ui, me ->
-        ui.copy(needsProfile = me.needsSetup)
+    val ui: StateFlow<HomeUi> = combine(base, profiles.observe(), vehicles.observe()) { ui, me, car ->
+        ui.copy(needsProfile = me.needsSetup || car.needsSetup)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
 
     fun choosePurpose(purpose: Purpose) {

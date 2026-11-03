@@ -42,6 +42,20 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     label = { Text("부서") }, singleLine = true, enabled = ui.loaded,
                 )
             }
+            SectionCard("이 차량 정보") {
+                OutlinedTextField(
+                    ui.plateNumber, viewModel::setPlate, Modifier.fillMaxWidth(),
+                    label = { Text("자동차등록번호 (예: 12가3456)") }, singleLine = true, enabled = ui.loaded,
+                )
+                OutlinedTextField(
+                    ui.model, viewModel::setModel, Modifier.fillMaxWidth(),
+                    label = { Text("차종") }, singleLine = true, enabled = ui.loaded,
+                )
+                OutlinedTextField(
+                    ui.company, viewModel::setCompany, Modifier.fillMaxWidth(),
+                    label = { Text("상호 (법인·사업자명)") }, singleLine = true, enabled = ui.loaded,
+                )
+            }
             SectionCard("시트 자세") {
                 SeatSlotPicker(ui, viewModel::setSlot)
                 if (ui.seatMemorySlot != null && ui.supportedSlots != null) {
@@ -66,6 +80,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 Note("운전자는 차량 화면 오른쪽 위 프로필로 구분해요. 별도 로그인은 없어요.")
                 Note("주행·방문 기록과 내보낸 운행기록부는 차량 프로필마다 따로 저장되고, 다른 프로필에서는 보이지 않아요.")
                 Note("차량 프로필을 지우면 그 기록도 함께 지워져요. 지우기 전에 운행기록부를 내보내 두세요.")
+                Note("차량번호·차종·상호는 운행기록부 머리말에 들어가요.")
             }
             SectionCard("시트 메모리란?") {
                 Note("차량 설정 > 시트 > 운전자 프리셋 1·2번에 자세를 저장해 두고, 여기서 그 번호를 고르세요.")

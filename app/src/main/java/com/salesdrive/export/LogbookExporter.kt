@@ -9,8 +9,9 @@ import android.util.Log
 import com.salesdrive.data.db.ProfileDao
 import com.salesdrive.data.db.StopDao
 import com.salesdrive.data.db.TripDao
-import com.salesdrive.data.db.VehicleDao
 import com.salesdrive.data.db.VisitDao
+import com.salesdrive.data.repo.VehicleRepository
+import com.salesdrive.data.repo.registeredPlate
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,7 +29,7 @@ class LogbookExporter @Inject constructor(
     private val visitDao: VisitDao,
     private val stopDao: StopDao,
     private val profileDao: ProfileDao,
-    private val vehicleDao: VehicleDao,
+    private val vehicles: VehicleRepository,
 ) {
     /** 저장한 위치(사람이 읽을 경로). 실패하면 예외 */
     suspend fun export(month: YearMonth, zone: ZoneId = ZoneId.systemDefault()): String = withContext(Dispatchers.IO) {
@@ -36,11 +37,13 @@ class LogbookExporter @Inject constructor(
             month.atDay(1).atStartOfDay(zone).toInstant(),
             month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant(),
         )
+        val vehicle = vehicles.current().let { it.copy(plateNumber = it.registeredPlate) }
         val csv = LogbookCsv.build(
             LogbookCsv.Input(
                 from = month.atDay(1),
                 to = month.atEndOfMonth(),
-                vehicle = vehicleDao.all().firstOrNull(),
+                vehicle = vehicle,
+                company = vehicle.company,
                 trips = trips,
                 drivers = profileDao.all().associateBy { it.id },
                 visits = trips.associate { it.id to visitDao.findByTrip(it.id) },

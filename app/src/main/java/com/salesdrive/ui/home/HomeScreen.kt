@@ -34,7 +34,7 @@ fun HomeScreen(viewModel: HomeViewModel, onOpenTrip: (Long) -> Unit, onOpenProfi
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             if (ui.needsProfile) {
                 SectionCard("내 정보를 입력해 주세요") {
-                    Text("운행기록부에 들어갈 성명·부서와 시트 메모리 번호를 정해요", style = MaterialTheme.typography.bodyLarge)
+                    Text("운행기록부에 들어갈 성명·부서, 차량번호와 시트 메모리 번호를 정해요", style = MaterialTheme.typography.bodyLarge)
                     Button(onClick = onOpenProfile) { Text("내 정보 입력", style = MaterialTheme.typography.titleMedium) }
                 }
             }
