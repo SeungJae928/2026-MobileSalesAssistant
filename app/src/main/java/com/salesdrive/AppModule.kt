@@ -26,6 +26,7 @@ import com.salesdrive.voice.SpeechCapture
 import com.salesdrive.voice.VisitParser
 import com.salesdrive.voice.VisitStore
 import com.salesdrive.voice.VoicePrompter
+import com.salesdrive.vehicle.AndroidLocationSource
 import com.salesdrive.vehicle.NoSeatMemory
 import com.salesdrive.vehicle.PleosSeatMemory
 import com.salesdrive.vehicle.SeatMemory
@@ -73,7 +74,7 @@ object AppModule {
     @Provides @Singleton
     fun demoSwitchSource(@ApplicationContext context: Context): DemoSwitchSource {
         val real = if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            PleosVehicleSource(context)
+            PleosVehicleSource(context, AndroidLocationSource(context))
         } else {
             FakeVehicleSource(
                 scenario = FakeVehicleSource.DEMO_SCENARIO,

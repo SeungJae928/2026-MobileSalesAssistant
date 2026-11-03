@@ -24,6 +24,11 @@
     <!-- 앱이 꺼져도 주행 기록 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- 출발·도착·경유 지점 좌표 (촘촘한 경로는 남기지 않음) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:name=".SalesDriveApp"
@@ -50,7 +55,7 @@
         <service
             android:name=".trip.TripService"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
+            android:foregroundServiceType="specialUse|location">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="차량 주행을 자동 기록해 운행기록부를 만든다" />
