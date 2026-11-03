@@ -16,7 +16,8 @@ NAME="운행기록부_${MONTH}.csv"
 USER_ID=${PROFILE_USER:-$(adb shell am get-current-user | tr -d '')}
 
 ID=$(adb shell content query --user "$USER_ID" --uri content://media/external/downloads --projection _id:_display_name \
-  | grep "_display_name=${NAME}" | sed -E 's/.*_id=([0-9]+).*/\1/' | tail -1 || true)
+  | grep -E "_display_name=운행기록부_${MONTH}( \([0-9]+\))?\.csv(,|$)" | sed -E 's/.*_id=([0-9]+).*/\1/' | sort -n | tail -1 || true)
+# 예전 버전은 다시 내보낼 때 "(1)" 사본을 만들었으므로, 같은 달 파일 중 가장 최근 것을 가져온다
 if [ -z "$ID" ]; then
   echo "차량 프로필 ${USER_ID}에 ${NAME} 이 없습니다. 운행기록부 화면에서 CSV 내보내기를 먼저 누르세요." >&2
   exit 1
