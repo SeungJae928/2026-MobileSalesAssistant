@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,11 +27,17 @@ import com.salesdrive.ui.common.phaseLabel
 
 /** 정차 중 첫 화면: 지금 상태, 출발 목적, 오늘 주행 km, 이번 달 업무 비율, 후속 일정, 오늘 주행 */
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, onOpenTrip: (Long) -> Unit) {
+fun HomeScreen(viewModel: HomeViewModel, onOpenTrip: (Long) -> Unit, onOpenProfile: () -> Unit) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
 
     Row(Modifier.fillMaxSize().padding(32.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            if (ui.needsProfile) {
+                SectionCard("내 정보를 입력해 주세요") {
+                    Text("운행기록부에 들어갈 성명·부서와 시트 메모리 번호를 정해요", style = MaterialTheme.typography.bodyLarge)
+                    Button(onClick = onOpenProfile) { Text("내 정보 입력", style = MaterialTheme.typography.titleMedium) }
+                }
+            }
             SectionCard(ui.recorder.phaseLabel) {
                 if (ui.recorder.canChoosePurpose) {
                     Text("이번 주행 목적", style = MaterialTheme.typography.titleMedium)

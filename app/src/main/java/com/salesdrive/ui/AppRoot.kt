@@ -22,12 +22,14 @@ import com.salesdrive.ui.driving.DrivingScreen
 import com.salesdrive.ui.driving.DrivingViewModel
 import com.salesdrive.ui.home.HomeScreen
 import com.salesdrive.ui.logbook.LogbookScreen
+import com.salesdrive.ui.profile.ProfileScreen
 import com.salesdrive.ui.review.TripDetailScreen
 import com.salesdrive.ui.signal.SignalCheckScreen
 
 enum class Tab(val label: String, val icon: String) {
     HOME("홈", "🏠"),
     LOGBOOK("운행기록부", "📒"),
+    PROFILE("내 정보", "👤"),
     SIGNAL("신호 확인", "🛠"),
 }
 
@@ -63,8 +65,9 @@ fun AppRoot(driving: DrivingViewModel = hiltViewModel()) {
         val trip = openTrip
         when {
             trip != null -> TripDetailScreen(hiltViewModel(), trip, onBack = { openTrip = null })
-            tab == Tab.HOME -> HomeScreen(hiltViewModel(), onOpenTrip = { openTrip = it })
+            tab == Tab.HOME -> HomeScreen(hiltViewModel(), onOpenTrip = { openTrip = it }, onOpenProfile = { tab = Tab.PROFILE })
             tab == Tab.LOGBOOK -> LogbookScreen(hiltViewModel(), onOpenTrip = { openTrip = it })
+            tab == Tab.PROFILE -> ProfileScreen(hiltViewModel())
             tab == Tab.SIGNAL -> SignalCheckScreen(hiltViewModel())
         }
     }

@@ -8,6 +8,9 @@
 
     <!-- Pleos Vehicle SDK: Odometer, Gear -->
     <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
+    <!-- 시트 메모리(운전자 프리셋) 조회·불러오기 -->
+    <uses-permission android:name="pleos.car.permission.CAR_SEATS" />
+    <uses-permission android:name="pleos.car.permission.CONTROL_CAR_SEATS" />
     <!-- AAOS 차량 속성: 속도(런타임 권한), 주차브레이크·시동 -->
     <uses-permission android:name="android.car.permission.CAR_SPEED" />
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />

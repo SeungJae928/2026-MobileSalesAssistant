@@ -23,6 +23,7 @@ data class DriverProfile(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val department: String?,
+    val seatMemorySlot: Int? = null,     // 연결한 차량 시트 메모리 번호 (차량 기본 기능으로 저장해 둔 운전자 프리셋)
     val seatPreset: String? = null,      // JSON {축: 값}, 지원 축만
     val comfortPreset: String? = null,   // JSON: 공조 온도, 핸들·미러 열선
     val presetCapturedAt: Instant? = null,
