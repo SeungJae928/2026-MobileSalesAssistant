@@ -26,6 +26,9 @@ import com.salesdrive.voice.SpeechCapture
 import com.salesdrive.voice.VisitParser
 import com.salesdrive.voice.VisitStore
 import com.salesdrive.voice.VoicePrompter
+import com.salesdrive.vehicle.NoSeatMemory
+import com.salesdrive.vehicle.PleosSeatMemory
+import com.salesdrive.vehicle.SeatMemory
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -55,6 +58,10 @@ object AppModule {
     /** Pleos LLM으로 먼저 파싱하고, 실패하면 규칙 기반 파서 */
     @Provides @Singleton
     fun visitParser(llm: PleosLlmClient): VisitParser = FallbackVisitParser(LlmVisitParser(llm), RuleVisitParser)
+
+    @Provides @Singleton
+    fun seatMemory(@ApplicationContext context: Context): SeatMemory =
+        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) PleosSeatMemory(context) else NoSeatMemory
 
     @Provides @Singleton
     fun drivingRestriction(@ApplicationContext context: Context): DrivingRestriction = CarDrivingRestriction(context)

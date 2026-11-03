@@ -1,7 +1,5 @@
 package com.salesdrive.data.repo
 
-import com.salesdrive.data.db.DriverProfile
-import com.salesdrive.data.db.ProfileDao
 import com.salesdrive.data.db.StopDao
 import com.salesdrive.data.db.Purpose
 import com.salesdrive.data.db.PurposeSource
@@ -26,7 +24,7 @@ import javax.inject.Singleton
 class TripRepository @Inject constructor(
     private val tripDao: TripDao,
     private val vehicleDao: VehicleDao,
-    private val profileDao: ProfileDao,
+    private val profiles: ProfileRepository,
     private val stopDao: StopDao,
 ) : TripStore {
 
@@ -63,7 +61,7 @@ class TripRepository @Inject constructor(
         return tripDao.insert(
             Trip(
                 vehicleId = currentVehicleId(),
-                driverId = currentDriverId(),
+                driverId = profiles.me().id,
                 startedAt = Instant.ofEpochMilli(at.timestampMs),
                 odoStartKm = at.odometerKm,
                 startLat = at.location?.lat,
@@ -105,10 +103,7 @@ class TripRepository @Inject constructor(
 
     override suspend fun lastEndedTripId(): Long? = tripDao.lastEndedId()
 
-    // TODO: 설정 화면의 차량 등록, READY의 운전자 선택이 생기면 그 값을 쓴다. 그전까지는 기본값 하나를 만들어 둔다
+    // TODO: 설정 화면에 차량 등록이 생기면 그 값을 쓴다. 그전까지는 기본값 하나를 만들어 둔다
     private suspend fun currentVehicleId(): Long =
         vehicleDao.all().firstOrNull()?.id ?: vehicleDao.insert(Vehicle(plateNumber = "미등록", model = null))
-
-    private suspend fun currentDriverId(): Long =
-        profileDao.first()?.id ?: profileDao.insert(DriverProfile(name = "기본 운전자", department = null))
 }

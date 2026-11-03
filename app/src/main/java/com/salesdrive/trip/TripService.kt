@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.salesdrive.navi.NaviSource
+import com.salesdrive.profile.SeatRestorer
 import com.salesdrive.voice.PleosLlmClient
 import com.salesdrive.voice.VisitInterviewer
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,6 +28,7 @@ class TripService : LifecycleService() {
     @Inject lateinit var interviewer: VisitInterviewer
     @Inject lateinit var navi: NaviSource
     @Inject lateinit var llm: PleosLlmClient
+    @Inject lateinit var seatRestorer: SeatRestorer
 
     override fun onCreate() {
         super.onCreate()
@@ -36,6 +38,7 @@ class TripService : LifecycleService() {
         llm.warmUp()
         lifecycleScope.launch { recorder.run() }
         lifecycleScope.launch { interviewer.run() }
+        lifecycleScope.launch { seatRestorer.run() }
     }
 
     override fun onDestroy() {
