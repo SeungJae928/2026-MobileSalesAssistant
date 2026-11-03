@@ -25,12 +25,14 @@ import kotlinx.coroutines.launch
  *
  * - Pleos Vehicle SDK: 누적 주행거리(Odometer), 기어(Gear). 권한 pleos.car.permission.CAR_DRIVE
  * - AAOS 차량 속성: 속도, 주차브레이크, 시동. Pleos SDK에 해당 API가 없다
+ * - 위치: [LocationSource] (Pleos 퓨전 위치)
  *
  * 신호는 바뀔 때만 오지만, 상태머신은 "주차 30초 유지"처럼 시간 경과로도 판단하므로
  * 마지막 값을 [tickMs]마다 현재 시각으로 다시 내보낸다. 주행거리를 받기 전에는 아무것도 내보내지 않는다.
  */
 class PleosVehicleSource(
     private val context: Context,
+    private val location: LocationSource = NoLocationSource,
     private val tickMs: Long = 1_000,
 ) : VehicleSignalSource {
 
@@ -40,6 +42,7 @@ class PleosVehicleSource(
         val speedKmh: Float? = null,
         val parkingBrakeOn: Boolean? = null,
         val ignitionOn: Boolean? = null,
+        val location: GeoPoint? = null,
     )
 
     override val snapshots: Flow<VehicleSnapshot> = callbackFlow {
@@ -99,6 +102,8 @@ class PleosVehicleSource(
             }
         }
 
+        launch { location.locations.collect { p -> latest.update { it.copy(location = p) } } }
+
         launch {
             while (isActive) {
                 val l = latest.value
@@ -111,7 +116,7 @@ class PleosVehicleSource(
                             gear = l.gear,
                             parkingBrakeOn = l.parkingBrakeOn,
                             odometerKm = l.odometerKm,
-                            location = null, // TODO: FusedLocation SDK
+                            location = l.location,
                         ),
                     )
                 }

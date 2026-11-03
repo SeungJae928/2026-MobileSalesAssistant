@@ -1,10 +1,12 @@
 package com.salesdrive.trip
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -32,8 +34,7 @@ class TripService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
-        val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(), type)
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(), foregroundTypes())
         navi.start()
         llm.warmUp()
         lifecycleScope.launch { recorder.run() }
@@ -49,6 +50,15 @@ class TripService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         return START_STICKY
+    }
+
+    /** 위치 권한이 있을 때만 location 유형을 붙인다. 권한 없이 붙이면 서비스 시작이 거부된다 */
+    private fun foregroundTypes(): Int {
+        if (Build.VERSION.SDK_INT < 34) return 0
+        val location = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        return ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or
+            (if (location) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0)
     }
 
     private fun notification(): Notification {
