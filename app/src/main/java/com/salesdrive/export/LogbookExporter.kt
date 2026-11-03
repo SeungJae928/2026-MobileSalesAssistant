@@ -58,20 +58,39 @@ class LogbookExporter @Inject constructor(
     private fun write(name: String, bytes: ByteArray): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, name)
-                put(MediaStore.Downloads.MIME_TYPE, "text/csv")
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + FOLDER)
-            }
-            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: error("다운로드 폴더에 파일을 만들 수 없습니다")
-            resolver.openOutputStream(uri)!!.use { it.write(bytes) }
+            val relativePath = Environment.DIRECTORY_DOWNLOADS + "/" + FOLDER + "/"
+            // 같은 달을 다시 내보내면 "(1)" 사본을 만들지 않고 이 앱이 만든 파일을 덮어쓴다
+            val uri = findOwnDownload(name, relativePath) ?: resolver.insert(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, name)
+                    put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                    put(MediaStore.Downloads.RELATIVE_PATH, relativePath)
+                },
+            ) ?: error("다운로드 폴더에 파일을 만들 수 없습니다")
+            resolver.openOutputStream(uri, "wt")!!.use { it.write(bytes) }
             return "다운로드/$FOLDER/$name"
         }
         val dir = File(context.getExternalFilesDir(null), FOLDER).apply { mkdirs() }
         val file = File(dir, name)
         file.writeBytes(bytes)
         return file.absolutePath
+    }
+
+    /** 다운로드 폴더에서 이 앱이 만든 같은 이름의 파일. 다른 앱 파일은 권한 없이 보이지 않는다 */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.Q)
+    private fun findOwnDownload(name: String, relativePath: String): android.net.Uri? {
+        val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+        context.contentResolver.query(
+            collection,
+            arrayOf(MediaStore.Downloads._ID),
+            "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} = ?",
+            arrayOf(name, relativePath),
+            "${MediaStore.Downloads._ID} DESC",
+        )?.use { c ->
+            if (c.moveToFirst()) return android.content.ContentUris.withAppendedId(collection, c.getLong(0))
+        }
+        return null
     }
 
     private companion object {
