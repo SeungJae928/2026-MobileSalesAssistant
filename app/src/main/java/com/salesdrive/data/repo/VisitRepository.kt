@@ -5,6 +5,7 @@ import com.salesdrive.data.db.PurposeSource
 import com.salesdrive.data.db.TripDao
 import com.salesdrive.data.db.Visit
 import com.salesdrive.data.db.VisitDao
+import com.salesdrive.voice.ParsedVisit
 import com.salesdrive.voice.VisitParser
 import com.salesdrive.voice.VisitStore
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,19 @@ class VisitRepository @Inject constructor(
         scope.launch { organize(id) }
         return id
     }
+
+    /** 이미 정리된 값으로 저장한다(Gleo가 뽑아 준 경우). 다시 파싱하지 않는다 */
+    suspend fun saveParsed(tripId: Long, raw: String, v: ParsedVisit): Long = visitDao.insert(
+        Visit(
+            tripId = tripId,
+            rawUtterance = raw,
+            client = v.client,
+            contact = v.contact,
+            summary = v.summary,
+            followUp = v.followUp,
+            followUpDate = v.followUpDate,
+        ),
+    )
 
     fun observeByTrip(tripId: Long): Flow<List<Visit>> = visitDao.observeByTrip(tripId)
 

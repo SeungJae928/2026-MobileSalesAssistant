@@ -1,0 +1,42 @@
+{
+  "packageName": "com.salesdrive",
+  "appDescription": "A driving logbook for sales staff that records business trips and the client visits made at each stop.",
+  "invokeWord": "영업 비서",
+  "version": "1.0.0",
+  "actionCalls": [
+    {
+      "type": "function",
+      "function": {
+        "name": "RECORD_CLIENT_VISIT",
+        "description": "Save a sales visit note for the trip the user is driving or has just finished, so it appears in the visit log.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string",
+              "description": "Short summary of what happened at the visit, in the user's language, at most 20 characters."
+            },
+            "client": {
+              "type": "string",
+              "description": "Name of the client company that was visited."
+            },
+            "contact": {
+              "type": "string",
+              "description": "Name and job title of the person the user met at the client."
+            },
+            "followUp": {
+              "type": "string",
+              "description": "The next task the user promised to do for this client."
+            },
+            "followUpDate": {
+              "type": "string",
+              "description": "Due date of the follow-up task in ISO 8601 date format (YYYY-MM-DD)."
+            }
+          },
+          "required": ["summary"]
+        },
+        "component": "service"
+      }
+    }
+  ]
+}
