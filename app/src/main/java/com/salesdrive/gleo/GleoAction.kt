@@ -2,6 +2,7 @@ package com.salesdrive.gleo
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.salesdrive.voice.DateFinder
 import com.salesdrive.voice.ParsedVisit
 import java.time.LocalDate
 
@@ -42,13 +43,19 @@ object GleoAction {
         }
     }
 
-    /** Gleo가 뽑아 준 값 → 방문 항목. 날짜는 형식이 틀리면 버린다 */
-    fun visit(p: Map<String, String>): ParsedVisit = ParsedVisit(
+    /** Gleo는 action 앞에 패키지명을 붙여 보내기도 한다. 어느 쪽이든 schema의 function 이름으로 맞춘다 */
+    fun functionName(action: String, packageName: String): String = action.removePrefix("$packageName.")
+
+    /**
+     * Gleo가 뽑아 준 값 → 방문 항목.
+     * Gleo는 "내일"을 2023-10-26처럼 틀린 날짜로 바꾼 적이 있어, 말 그대로 받은 표현을 오늘 기준으로 직접 계산한다.
+     */
+    fun visit(p: Map<String, String>, today: LocalDate): ParsedVisit = ParsedVisit(
         client = p["client"],
         contact = p["contact"],
         summary = p["summary"]?.take(SUMMARY_MAX),
         followUp = p["followUp"],
-        followUpDate = p["followUpDate"]?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() },
+        followUpDate = p["followUpWhen"]?.let { DateFinder.find(it, today)?.date },
     )
 
     /**
@@ -56,7 +63,7 @@ object GleoAction {
      * 어디서 온 기록인지 알 수 있게 앞에 표시한다.
      */
     fun rawText(p: Map<String, String>): String =
-        listOfNotNull(p["client"], p["contact"], p["summary"], p["followUp"], p["followUpDate"])
+        listOfNotNull(p["client"], p["contact"], p["summary"], p["followUp"], p["followUpWhen"])
             .joinToString(" · ")
             .ifEmpty { "(내용 없음)" }
             .let { "[Gleo] $it" }

@@ -28,9 +28,9 @@
               "type": "string",
               "description": "The next task the user promised to do for this client."
             },
-            "followUpDate": {
+            "followUpWhen": {
               "type": "string",
-              "description": "Due date of the follow-up task in ISO 8601 date format (YYYY-MM-DD)."
+              "description": "When the follow-up task is due, copied exactly in the user's own words without converting it to a date."
             }
           },
           "required": ["summary"]

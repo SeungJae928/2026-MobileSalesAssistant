@@ -35,7 +35,7 @@ class GleoActionReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        val action = intent.action ?: return
+        val action = GleoAction.functionName(intent.action ?: return, context.packageName)
         val param = intent.getStringExtra(GleoAction.EXTRA_ACTION_PARAM)
         Log.i(TAG, "action $action param=${param?.length ?: 0}자")
         val handler = EntryPointAccessors.fromApplication(context.applicationContext, Deps::class.java).handler()
@@ -80,7 +80,7 @@ class GleoActionHandler @Inject constructor(
 
     private suspend fun recordVisit(p: Map<String, String>): String {
         val fn = GleoAction.RECORD_CLIENT_VISIT
-        val v = GleoAction.visit(p)
+        val v = GleoAction.visit(p, LocalDate.now())
         if (GleoAction.isEmpty(v)) {
             return GleoAction.callback(fn, Status.ASKING, "Please tell me what happened at the visit.", mapOf("missingField" to "summary"))
         }

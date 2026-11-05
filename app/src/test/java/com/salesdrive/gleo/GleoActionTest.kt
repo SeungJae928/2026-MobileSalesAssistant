@@ -33,16 +33,28 @@ class GleoActionTest {
         assertEquals(mapOf("summary" to "미팅", "n" to "3"), p)
     }
 
-    @Test fun `visit keeps valid date and trims summary`() {
-        val v = GleoAction.visit(mapOf("summary" to "가".repeat(30), "followUpDate" to "2026-11-10T09:00:00+09:00"))
+    private val today = LocalDate.of(2026, 11, 5)
+
+    @Test fun `follow up date is computed from the spoken words and summary is trimmed`() {
+        val v = GleoAction.visit(mapOf("summary" to "가".repeat(30), "followUpWhen" to "다음 주 화요일까지"), today)
         assertEquals(20, v.summary!!.length)
         assertEquals(LocalDate.of(2026, 11, 10), v.followUpDate)
-        assertNull(GleoAction.visit(mapOf("followUpDate" to "다음 주")).followUpDate)
+        assertEquals(LocalDate.of(2026, 11, 6), GleoAction.visit(mapOf("followUpWhen" to "내일"), today).followUpDate)
+        assertNull(GleoAction.visit(mapOf("followUpWhen" to "조만간"), today).followUpDate)
+    }
+
+    @Test fun `a date made up by gleo is ignored`() {
+        assertNull(GleoAction.visit(mapOf("followUpDate" to "2023-10-26"), today).followUpDate)
+    }
+
+    @Test fun `action with or without package prefix is the same function`() {
+        assertEquals("RECORD_CLIENT_VISIT", GleoAction.functionName("com.salesdrive.RECORD_CLIENT_VISIT", "com.salesdrive"))
+        assertEquals("RECORD_CLIENT_VISIT", GleoAction.functionName("RECORD_CLIENT_VISIT", "com.salesdrive"))
     }
 
     @Test fun `empty visit asks again`() {
-        assertTrue(GleoAction.isEmpty(GleoAction.visit(mapOf("contact" to "김부장"))))
-        assertFalse(GleoAction.isEmpty(GleoAction.visit(mapOf("client" to "A상사"))))
+        assertTrue(GleoAction.isEmpty(GleoAction.visit(mapOf("contact" to "김부장"), today)))
+        assertFalse(GleoAction.isEmpty(GleoAction.visit(mapOf("client" to "A상사"), today)))
     }
 
     @Test fun `raw text marks gleo origin`() {
