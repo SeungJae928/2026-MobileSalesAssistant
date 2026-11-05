@@ -16,7 +16,7 @@ object RuleVisitParser : VisitParser {
         parseNow(utterance, today)
 
     fun parseNow(utterance: String, today: LocalDate): ParsedVisit? {
-        val text = utterance.trim().replace(Regex("\\s+"), " ")
+        val text = CompanyName.normalize(utterance.trim().replace(Regex("\\s+"), " "))
         if (text.isEmpty()) return null
 
         val client = findClient(text)
@@ -69,7 +69,7 @@ object RuleVisitParser : VisitParser {
     // --- 거래처 ---
 
     private val COMPANY_SUFFIX = Regex(
-        "(상사|물산|전자|산업|기업|건설|제약|화학|통상|무역|은행|증권|보험|병원|유통|식품|테크|솔루션|시스템|시스템즈|그룹|코리아|컴퍼니|정밀|공업|모터스|약품|에너지|엔지니어링|홀딩스|주식회사)$",
+        "(" + CompanyName.SUFFIXES.joinToString("|") + ")$",
     )
     private val BRANCH = setOf("본사", "지사", "공장", "연구소", "사무소", "지점", "센터", "본점")
     private val JOSA = listOf("에서는", "에서", "에게", "한테", "이랑", "하고", "랑", "에", "의", "와", "과", "은", "는", "이", "가", "을", "를", "도")
