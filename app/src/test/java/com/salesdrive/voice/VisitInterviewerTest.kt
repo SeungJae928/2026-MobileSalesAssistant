@@ -176,6 +176,26 @@ class VisitInterviewerTest {
         assertEquals(StopDecision.UNDECIDED, recorder.state.value.trip.stopDecision)
     }
 
+    @Test fun `a misheard reply is asked again and not saved`() = runTest {
+        val (recorder, spoken, visits) = arriveWith("이렇게", "네", "C전자 박과장 데모")
+
+        assertEquals(listOf(7L to "C전자 박과장 데모"), visits.saved)
+        assertEquals(
+            listOf(VisitInterviewer.CONFIRM, VisitInterviewer.CONFIRM_RETRY, VisitInterviewer.QUESTION, VisitInterviewer.SAVED),
+            spoken.lines,
+        )
+        assertEquals(TripPhase.READY, recorder.state.value.trip.phase)
+    }
+
+    @Test fun `misheard twice leaves the decision to the screen`() = runTest {
+        val (recorder, spoken, visits) = arriveWith("이렇게", "이렇게")
+
+        assertTrue(visits.saved.isEmpty())
+        assertEquals(listOf(VisitInterviewer.CONFIRM, VisitInterviewer.CONFIRM_RETRY), spoken.lines)
+        assertEquals(TripPhase.STOPPED, recorder.state.value.trip.phase)
+        assertEquals(StopDecision.UNDECIDED, recorder.state.value.trip.stopDecision)
+    }
+
     @Test fun `driving off while listening cancels the interview`() = runTest {
         val source = ManualSource()
         val recorder = TripRecorder(source, OneTripStore(), NoNaviSource())

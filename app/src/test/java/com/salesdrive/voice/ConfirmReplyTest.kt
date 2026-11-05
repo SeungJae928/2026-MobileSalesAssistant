@@ -30,6 +30,13 @@ class ConfirmReplyTest {
         "그래도 계약은 다음 달",
     )
 
+    @Test fun `a short misheard word is not content`() {
+        assertNull(ConfirmReply.classify("이렇게"))   // "기록해"를 잘못 들어 방문 내용으로 저장되던 문제
+        assertNull(ConfirmReply.classify("이렇게요"))
+        assertEquals(ConfirmReply.CONTENT, ConfirmReply.classify("납품 미팅"))
+        assertEquals(ConfirmReply.CONTENT, ConfirmReply.classify("A상사납품미팅"))
+    }
+
     @Test fun `noise is undecided`() {
         assertNull(ConfirmReply.classify(""))
         assertNull(ConfirmReply.classify(" . "))
