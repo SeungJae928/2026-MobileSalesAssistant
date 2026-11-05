@@ -43,6 +43,11 @@ class GleoActionTest {
         assertNull(GleoAction.visit(mapOf("followUpWhen" to "조만간"), today).followUpDate)
     }
 
+    @Test fun `client spelled in korean sounds is recorded in latin`() {
+        assertEquals("C물산", GleoAction.visit(mapOf("client" to "시물산"), today).client)
+        assertEquals("B전자", GleoAction.visit(mapOf("client" to "b전자"), today).client)
+    }
+
     @Test fun `a date made up by gleo is ignored`() {
         assertNull(GleoAction.visit(mapOf("followUpDate" to "2023-10-26"), today).followUpDate)
     }

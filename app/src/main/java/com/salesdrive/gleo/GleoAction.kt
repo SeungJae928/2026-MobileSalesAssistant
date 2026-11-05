@@ -2,6 +2,7 @@ package com.salesdrive.gleo
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.salesdrive.voice.CompanyName
 import com.salesdrive.voice.DateFinder
 import com.salesdrive.voice.ParsedVisit
 import java.time.LocalDate
@@ -51,7 +52,7 @@ object GleoAction {
      * Gleo는 "내일"을 2023-10-26처럼 틀린 날짜로 바꾼 적이 있어, 말 그대로 받은 표현을 오늘 기준으로 직접 계산한다.
      */
     fun visit(p: Map<String, String>, today: LocalDate): ParsedVisit = ParsedVisit(
-        client = p["client"],
+        client = p["client"]?.let(CompanyName::normalize),
         contact = p["contact"],
         summary = p["summary"]?.take(SUMMARY_MAX),
         followUp = p["followUp"],
