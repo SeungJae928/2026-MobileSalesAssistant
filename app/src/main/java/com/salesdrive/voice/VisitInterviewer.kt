@@ -40,6 +40,14 @@ class VisitInterviewer @Inject constructor(
     internal suspend fun confirm() {
         prompter.speak(CONFIRM)
         val heard = capture.listen() ?: return
+        if (applyConfirmReply(heard)) return
+        // 들리긴 했는데 판단할 수 없는 답: 한 번만 다시 묻고, 그래도 모르겠으면 화면 버튼에 맡긴다
+        prompter.speak(CONFIRM_RETRY)
+        capture.listen()?.let { applyConfirmReply(it) }
+    }
+
+    /** 답을 반영했으면 true. 판단할 수 없으면 아무것도 바꾸지 않고 false */
+    private suspend fun applyConfirmReply(heard: String): Boolean {
         when (ConfirmReply.classify(heard)) {
             ConfirmReply.YES -> recorder.confirmVisit()
             ConfirmReply.CONTENT -> recorder.confirmVisit(answer = heard)
@@ -47,8 +55,9 @@ class VisitInterviewer @Inject constructor(
                 recorder.declineVisit()
                 prompter.speak(DECLINED)
             }
-            null -> Unit
+            null -> return false
         }
+        return true
     }
 
     internal suspend fun interview(tripId: Long?, answer: String? = null, question: String = QUESTION) {
@@ -79,7 +88,8 @@ class VisitInterviewer @Inject constructor(
         private const val TAG = "VisitInterviewer"
 
         const val CONFIRM = "도착하셨네요. 방문 기록할까요?"
-        const val DECLINED = "알겠습니다. 경유지로 보고 계속 기록할게요."
+        const val CONFIRM_RETRY = "잘 못 들었어요. 방문 기록할까요?"
+        const val DECLINED ="알겠습니다. 경유지로 보고 계속 기록할게요."
 
         const val QUESTION = "방문 내용 말씀해 주세요."
         const val RETRY = "방문 내용을 한 번 더 말씀해 주세요."
