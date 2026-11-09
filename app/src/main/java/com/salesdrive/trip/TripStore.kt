@@ -13,6 +13,12 @@ interface TripStore {
     /** 닫은 주행의 id. 열린 주행이 없으면 아무것도 하지 않고 null. [destination]은 내비 목적지명 */
     suspend fun endTrip(at: VehicleSnapshot, destination: String?): Long?
 
+    /**
+     * 날을 넘겨 버려진 주행을 닫는다. 도착 시각을 알 수 없어 출발 시각으로 닫으므로 오늘의 주행으로 잡히지 않는다.
+     * 계기판 값은 [at]으로 적되, 그 사이 기록되지 않은 주행이 섞였을 수 있어 비고에 남긴다.
+     */
+    suspend fun closeAbandoned(at: VehicleSnapshot)
+
     /** 열린 주행에 경유 정차를 남긴다. 열린 주행이 없으면 아무것도 하지 않는다 */
     suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot, name: String?)
 

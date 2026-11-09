@@ -44,6 +44,11 @@ class TripRecorderTest {
             return open.id
         }
 
+        override suspend fun closeAbandoned(at: VehicleSnapshot) {
+            val open = openTrip() ?: return
+            trips[trips.indexOf(open)] = open.copy(endedAt = open.startedAt, odoEndKm = at.odometerKm)
+        }
+
         val stops = mutableListOf<Pair<Long, VehicleSnapshot>>()
         val stopNames = mutableListOf<String?>()
         override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot, name: String?) {
@@ -100,6 +105,27 @@ class TripRecorderTest {
 
         val trip = store.trips.single()
         assertEquals(512.0, trip.odoEndKm!!, 0.0)
+    }
+
+    @Test fun `trip abandoned overnight is closed on the first signal and the next drive is a new trip`() = runTest {
+        val startedAt = 1_000_000_000_000L
+        val nextDay = startedAt + 26 * 3_600_000L
+        val store = MemoryStore(listOf(trip(1, odoStart = 500.0, startedAt = startedAt)))
+        val parked = (0..5).map { t -> VehicleSnapshot(nextDay + t * 1000L, true, 0f, Gear.P, true, 512.0, null) }
+        val drive = (6..9).map { t -> VehicleSnapshot(nextDay + t * 1000L, true, 40f, Gear.D, false, 512.0 + t, null) }
+        val recorder = TripRecorder(ListSource(parked + drive), store, NoNaviSource())
+        val prompts = mutableListOf<VisitPrompt>()
+        val promptJob = launch(UnconfinedTestDispatcher(testScheduler)) { recorder.visitPrompts.toList(prompts) }
+
+        recorder.run()
+        promptJob.cancel()
+
+        val closed = store.trips[0]
+        assertEquals(Instant.ofEpochMilli(startedAt), closed.endedAt)
+        assertEquals(512.0, closed.odoEndKm!!, 0.0)
+        assertEquals(2, store.trips.size)
+        assertNull(store.trips[1].endedAt)
+        assertEquals(emptyList<VisitPrompt>(), prompts)
     }
 
     @Test fun `no open trip starts from IDLE and records nothing while parked`() = runTest {

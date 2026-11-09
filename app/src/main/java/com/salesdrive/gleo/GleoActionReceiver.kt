@@ -8,6 +8,7 @@ import com.salesdrive.data.db.Trip
 import com.salesdrive.data.db.TripDao
 import com.salesdrive.data.repo.VisitRepository
 import com.salesdrive.gleo.GleoAction.Status
+import com.salesdrive.trip.OpenTripPolicy
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
@@ -99,9 +101,9 @@ class GleoActionHandler @Inject constructor(
         )
     }
 
-    /** 주행 중이면 그 주행, 아니면 오늘 끝난 마지막 주행 */
+    /** 주행 중이면 그 주행, 아니면 오늘 끝난 마지막 주행. 날을 넘겨 버려진 주행에는 붙이지 않는다 */
     private suspend fun targetTrip(zone: ZoneId = ZoneId.systemDefault()): Trip? {
-        trips.findOpen()?.let { return it }
+        trips.findOpen()?.takeUnless { OpenTripPolicy.isAbandoned(it.startedAt, Instant.now(), zone) }?.let { return it }
         val last = trips.lastEnded() ?: return null
         val today = LocalDate.now(zone).atStartOfDay(zone).toInstant()
         return last.takeIf { (it.endedAt ?: return null) >= today }

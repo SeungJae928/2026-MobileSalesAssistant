@@ -84,6 +84,17 @@ class TripRepository @Inject constructor(
         return open.id
     }
 
+    override suspend fun closeAbandoned(at: VehicleSnapshot) {
+        val open = tripDao.findOpen() ?: return
+        tripDao.update(
+            open.copy(
+                endedAt = open.startedAt,
+                odoEndKm = at.odometerKm,
+                note = listOfNotNull(open.note, ABANDONED_NOTE).joinToString(" / "),
+            ),
+        )
+    }
+
     override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot, name: String?) {
         val open = tripDao.findOpen() ?: return
         stopDao.insert(
@@ -102,4 +113,8 @@ class TripRepository @Inject constructor(
     override suspend fun lastEndedTripId(): Long? = tripDao.lastEndedId()
 
     private suspend fun currentVehicleId(): Long = vehicles.current().id
+
+    private companion object {
+        const val ABANDONED_NOTE = "앱 종료로 도착 미확인(주행거리 확인 필요)"
+    }
 }
