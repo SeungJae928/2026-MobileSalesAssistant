@@ -72,6 +72,7 @@ fun TripDetailScreen(viewModel: TripDetailViewModel, tripId: Long, onBack: () ->
             if (Mileage.isOdometerReversed(trip)) {
                 Text("계기판 값이 주행 전보다 작아 주행거리를 0으로 기록했어요", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
             }
+            trip.note?.let { Text("비고: $it", style = MaterialTheme.typography.titleMedium) }
             trip.naviDestination?.let { Text("도착지: $it", style = MaterialTheme.typography.titleMedium) }
             Text("목적", style = MaterialTheme.typography.titleMedium)
             PurposeButtons(trip.purpose, viewModel::setPurpose, Modifier.fillMaxWidth(0.7f))

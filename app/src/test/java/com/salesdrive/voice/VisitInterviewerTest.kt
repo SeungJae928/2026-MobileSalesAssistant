@@ -58,6 +58,7 @@ class VisitInterviewerTest {
         override suspend fun startTrip(at: VehicleSnapshot) = 7L
         override suspend fun endTrip(at: VehicleSnapshot, destination: String?) = 7L
         override suspend fun lastEndedTripId() = 7L
+        override suspend fun closeAbandoned(at: VehicleSnapshot) = Unit
         override suspend fun addStop(arrived: VehicleSnapshot, departed: VehicleSnapshot, name: String?) = Unit
     }
 

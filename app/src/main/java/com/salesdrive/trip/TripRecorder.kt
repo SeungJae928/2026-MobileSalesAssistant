@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -82,13 +83,28 @@ class TripRecorder @Inject constructor(
     /**
      * 신호가 끊길 때까지 기록한다. 서비스 코루틴에서 호출.
      * 끝나지 않은 주행이 DB에 있으면(앱이 주행 중 종료됨) DRIVING에서 이어 가서, 다음 도착 때 그 주행을 닫는다.
+     * 날을 넘겨 버려진 주행이면 첫 신호의 값으로 닫고 처음부터 시작한다.
      */
     suspend fun run() {
-        if (store.openTrip() != null) {
+        var restored = false
+        source.snapshots.collect {
+            if (!restored) {
+                restored = true
+                restoreOpenTrip(it)
+            }
+            handle(TripEvent.Signal(it), it)
+        }
+    }
+
+    private suspend fun restoreOpenTrip(first: VehicleSnapshot) {
+        val open = store.openTrip() ?: return
+        if (OpenTripPolicy.isAbandoned(open.startedAt, Instant.ofEpochMilli(first.timestampMs))) {
+            store.closeAbandoned(first)
+            Log.i(TAG, "closed abandoned trip #${open.id}")
+        } else {
             _state.value = RecorderState(trip = TripState(TripPhase.DRIVING))
             Log.i(TAG, "resume open trip")
         }
-        source.snapshots.collect { handle(TripEvent.Signal(it), it) }
     }
 
     /**
