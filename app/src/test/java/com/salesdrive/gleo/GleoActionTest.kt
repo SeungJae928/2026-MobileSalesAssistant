@@ -66,6 +66,11 @@ class GleoActionTest {
         assertEquals("[Gleo] A상사 · 납품 미팅", GleoAction.rawText(mapOf("summary" to "납품 미팅", "client" to "A상사")))
     }
 
+    @Test fun `only records made through gleo count as gleo records`() {
+        assertTrue(GleoAction.isFromGleo(GleoAction.rawText(mapOf("summary" to "납품 미팅"))))
+        assertFalse(GleoAction.isFromGleo("A상사 김부장 납품 미팅"))
+    }
+
     @Test fun `callback follows the schema`() {
         val json = JsonParser.parseString(
             GleoAction.callback("RECORD_CLIENT_VISIT", GleoAction.Status.SUCCESS, "Saved.", mapOf("client" to "A상사", "contact" to null)),
