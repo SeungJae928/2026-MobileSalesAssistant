@@ -96,9 +96,24 @@ interface VisitDao {
     @Query("SELECT * FROM Visit WHERE followUpDate >= :from ORDER BY followUpDate, id LIMIT :limit")
     fun observeUpcoming(from: LocalDate, limit: Int): Flow<List<Visit>>
 
+    /** 캘린더: 기간 안의 후속 일정 */
+    @Query("SELECT * FROM Visit WHERE followUpDate BETWEEN :from AND :until ORDER BY followUpDate, id")
+    fun observeFollowUpsBetween(from: LocalDate, until: LocalDate): Flow<List<Visit>>
+
     /** "지난번 A사 미팅 알려줘": 해당 거래처 최근 방문 몇 건만 LLM에 넘긴다 */
     @Query("SELECT * FROM Visit WHERE client = :client ORDER BY id DESC LIMIT :limit")
     suspend fun recentByClient(client: String, limit: Int): List<Visit>
+}
+
+@Dao
+interface ScheduleDao {
+    @Insert suspend fun insert(schedule: Schedule): Long
+
+    @Query("DELETE FROM Schedule WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM Schedule WHERE date BETWEEN :from AND :until ORDER BY date, id")
+    fun observeBetween(from: LocalDate, until: LocalDate): Flow<List<Schedule>>
 }
 
 @Dao

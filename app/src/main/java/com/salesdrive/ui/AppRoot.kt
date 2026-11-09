@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.salesdrive.ui.calendar.CalendarScreen
 import com.salesdrive.ui.driving.DrivingScreen
 import com.salesdrive.ui.driving.DrivingViewModel
 import com.salesdrive.ui.home.HomeScreen
@@ -29,6 +30,7 @@ import com.salesdrive.ui.signal.SignalCheckScreen
 enum class Tab(val label: String, val icon: String) {
     HOME("홈", "🏠"),
     LOGBOOK("운행기록부", "📒"),
+    CALENDAR("일정", "📅"),
     PROFILE("내 정보", "👤"),
     SIGNAL("신호 확인", "🛠"),
 }
@@ -67,6 +69,7 @@ fun AppRoot(driving: DrivingViewModel = hiltViewModel()) {
             trip != null -> TripDetailScreen(hiltViewModel(), trip, onBack = { openTrip = null })
             tab == Tab.HOME -> HomeScreen(hiltViewModel(), onOpenTrip = { openTrip = it }, onOpenProfile = { tab = Tab.PROFILE })
             tab == Tab.LOGBOOK -> LogbookScreen(hiltViewModel(), onOpenTrip = { openTrip = it })
+            tab == Tab.CALENDAR -> CalendarScreen(hiltViewModel())
             tab == Tab.PROFILE -> ProfileScreen(hiltViewModel())
             tab == Tab.SIGNAL -> SignalCheckScreen(hiltViewModel())
         }

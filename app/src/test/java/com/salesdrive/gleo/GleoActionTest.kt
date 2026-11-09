@@ -7,6 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import java.time.LocalTime
 
 class GleoActionTest {
 
@@ -69,6 +70,26 @@ class GleoActionTest {
     @Test fun `only records made through gleo count as gleo records`() {
         assertTrue(GleoAction.isFromGleo(GleoAction.rawText(mapOf("summary" to "납품 미팅"))))
         assertFalse(GleoAction.isFromGleo("A상사 김부장 납품 미팅"))
+    }
+
+    @Test fun `schedule date is computed from the spoken words`() {
+        assertEquals(today.plusDays(1), GleoAction.scheduleDate(mapOf("when" to "내일"), today))
+        assertEquals(today, GleoAction.scheduleDate(mapOf("when" to "오늘 오후 3시"), today))
+        assertNull(GleoAction.scheduleDate(mapOf("when" to "2023-10-26"), today))
+        assertNull(GleoAction.scheduleDate(emptyMap(), today))
+    }
+
+    @Test fun `schedule reads the time from either field and normalizes the client`() {
+        val p = mapOf("title" to "제안 미팅", "when" to "내일 오후 3시", "client" to "에이 기업", "contact" to "김부장")
+        val s = GleoAction.schedule(p, "제안 미팅", today.plusDays(1))
+        assertEquals(LocalTime.of(15, 0), s.time)
+        assertEquals("A기업", s.client)
+        assertEquals("김부장", s.contact)
+        assertTrue(GleoAction.isFromGleo(s.rawText))
+
+        val separate = GleoAction.schedule(mapOf("when" to "내일", "time" to "오전 10시"), "점검", today)
+        assertEquals(LocalTime.of(10, 0), separate.time)
+        assertNull(GleoAction.schedule(mapOf("when" to "내일"), "점검", today).time)
     }
 
     @Test fun `callback follows the schema`() {

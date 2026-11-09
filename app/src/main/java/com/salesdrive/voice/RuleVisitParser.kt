@@ -163,7 +163,8 @@ internal object DateFinder {
     private val BARE_WEEKDAY = Regex("(?<![가-힣])([월화수목금토일])요일")
     private val BARE_DAY = Regex("(?<![\\d월])(\\d{1,2})\\s*일(?=\\s|까지|에|$)")
 
-    fun find(text: String, today: LocalDate): Match? {
+    /** [includeToday]가 false면 "오늘"은 날짜로 보지 않는다. 방문 내용의 "오늘 미팅 했어요"는 후속 일정이 아니다 */
+    fun find(text: String, today: LocalDate, includeToday: Boolean = false): Match? {
         MONTH_DAY.find(text)?.let { m ->
             val date = runCatching { LocalDate.of(today.year, m.int(1), m.int(2)) }.getOrNull() ?: return@let
             return Match(if (date.isBefore(today)) date.plusYears(1) else date, m.range)
@@ -176,8 +177,7 @@ internal object DateFinder {
         IN_DAYS.find(text)?.let { m -> return Match(today.plusDays(m.int(1).toLong()), m.range) }
         RELATIVE.find(text)?.let { m ->
             val days = listOf("오늘", "내일", "모레", "글피").indexOf(m.groupValues[1]).toLong()
-            // 요약에 쓰인 "오늘"(오늘 미팅 했어요)은 후속 일정이 아니다
-            if (days > 0) return Match(today.plusDays(days), m.range)
+            if (days > 0 || includeToday) return Match(today.plusDays(days), m.range)
         }
         BARE_WEEKDAY.find(text)?.let { m ->
             val dow = DayOfWeek.of(WEEKDAY.getValue(m.groupValues[1][0]))

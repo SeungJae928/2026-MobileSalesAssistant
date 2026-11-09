@@ -60,6 +60,8 @@
                 <action android:name="RECORD_CLIENT_VISIT" />
                 <!-- 에뮬레이터 Gleo 4.2 로그에는 패키지명이 붙은 이름으로 호출한다고 나온다 -->
                 <action android:name="com.salesdrive.RECORD_CLIENT_VISIT" />
+                <action android:name="RECORD_SCHEDULE" />
+                <action android:name="com.salesdrive.RECORD_SCHEDULE" />
             </intent-filter>
         </receiver>
 

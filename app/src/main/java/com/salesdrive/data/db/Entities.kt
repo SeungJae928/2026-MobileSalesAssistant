@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 
 enum class Purpose { BUSINESS, COMMUTE, PERSONAL }
 
@@ -65,6 +66,18 @@ data class TripStop(
     val lat: Double?,
     val lng: Double?,
     val name: String? = null,            // NaviHelper 경유지명
+)
+
+/** 앞으로의 일정. 방문 기록과 달리 주행에 묶이지 않는다 */
+@Entity(indices = [Index("date")])
+data class Schedule(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: LocalDate,
+    val time: LocalTime? = null,         // 시간을 말하지 않았으면 null
+    val title: String,
+    val client: String? = null,
+    val contact: String? = null,
+    val rawText: String,                 // 받은 표현 그대로. 날짜 계산이 맞는지 확인할 때 본다
 )
 
 @Entity(
