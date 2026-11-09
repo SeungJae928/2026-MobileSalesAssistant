@@ -10,6 +10,12 @@ object Mileage {
     fun distanceKm(trip: Trip): Double =
         trip.odoEndKm?.let { (it - trip.odoStartKm).coerceAtLeast(0.0) } ?: 0.0
 
+    /** 주행 후 계기판 값이 주행 전보다 작음(시연 주행을 실제 신호로 끝낸 경우 등). 실제 거리를 알 수 없다 */
+    fun isOdometerReversed(trip: Trip): Boolean = trip.odoEndKm?.let { it < trip.odoStartKm } ?: false
+
+    /** 화면과 기록부에 적는 주행 후 계기판 값. 뒤로 간 값은 주행 전 값으로 적어 주행거리 0과 맞춘다. DB에는 받은 값 그대로 둔다 */
+    fun endReadingKm(trip: Trip): Double? = trip.odoEndKm?.coerceAtLeast(trip.odoStartKm)
+
     data class Totals(
         val totalKm: Double = 0.0,
         val businessKm: Double = 0.0,

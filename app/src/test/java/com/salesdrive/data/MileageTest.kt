@@ -4,7 +4,9 @@ import com.salesdrive.data.db.Purpose
 import com.salesdrive.data.db.PurposeSource
 import com.salesdrive.data.db.Trip
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
@@ -30,6 +32,20 @@ class MileageTest {
         assertEquals(20.0, t.commuteKm, 1e-9)
         assertEquals(20.0, t.personalKm, 1e-9)
         assertEquals(0.8, t.businessRatio!!, 1e-9)
+    }
+
+    @Test fun `odometer that went backwards counts as zero distance and shows the start reading`() {
+        val t = trip(100.0, 0.0, Purpose.BUSINESS)
+        assertTrue(Mileage.isOdometerReversed(t))
+        assertEquals(0.0, Mileage.distanceKm(t), 1e-9)
+        assertEquals(100.0, Mileage.endReadingKm(t)!!, 1e-9)
+    }
+
+    @Test fun `normal and unfinished trips are not reversed`() {
+        assertFalse(Mileage.isOdometerReversed(trip(100.0, 100.0, Purpose.BUSINESS)))
+        assertEquals(130.0, Mileage.endReadingKm(trip(100.0, 130.0, Purpose.BUSINESS))!!, 1e-9)
+        assertFalse(Mileage.isOdometerReversed(trip(100.0, null, Purpose.BUSINESS)))
+        assertNull(Mileage.endReadingKm(trip(100.0, null, Purpose.BUSINESS)))
     }
 
     @Test fun `no driving has no ratio`() {

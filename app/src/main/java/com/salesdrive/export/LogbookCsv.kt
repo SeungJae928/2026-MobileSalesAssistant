@@ -40,6 +40,7 @@ object LogbookCsv {
     )
 
     private val DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    private const val ODOMETER_REVERSED_NOTE = "계기판 값 이상(주행거리 확인 필요)"
 
     fun build(input: Input): String {
         val rows = mutableListOf<List<String>>()
@@ -60,7 +61,7 @@ object LogbookCsv {
                 driver?.department.orEmpty(),
                 driver?.name.orEmpty(),
                 num(trip.odoStartKm),
-                num(trip.odoEndKm!!),
+                num(Mileage.endReadingKm(trip)!!),
                 num(km),
                 if (trip.purpose == Purpose.COMMUTE) num(km) else "",
                 if (trip.purpose == Purpose.BUSINESS) num(km) else "",
@@ -81,6 +82,7 @@ object LogbookCsv {
     fun note(trip: Trip, visits: List<Visit>, stops: List<TripStop>): String {
         val parts = mutableListOf<String>()
         if (trip.purpose == Purpose.PERSONAL) parts += "개인"
+        if (Mileage.isOdometerReversed(trip)) parts += ODOMETER_REVERSED_NOTE
         trip.note?.takeIf(String::isNotBlank)?.let(parts::add)
         visits.forEach { v ->
             val what = v.summary ?: v.rawUtterance
