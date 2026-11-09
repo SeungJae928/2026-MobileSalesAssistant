@@ -51,6 +51,7 @@ object AppModule {
     @Provides fun visitDao(db: SalesDriveDatabase) = db.visitDao()
     @Provides fun profileDao(db: SalesDriveDatabase) = db.profileDao()
     @Provides fun vehicleDao(db: SalesDriveDatabase) = db.vehicleDao()
+    @Provides fun scheduleDao(db: SalesDriveDatabase) = db.scheduleDao()
 
     @Provides @Singleton
     fun naviSource(@ApplicationContext context: Context): NaviSource =

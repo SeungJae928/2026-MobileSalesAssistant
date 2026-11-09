@@ -6,6 +6,7 @@ import android.content.Intent
 import android.util.Log
 import com.salesdrive.data.db.Trip
 import com.salesdrive.data.db.TripDao
+import com.salesdrive.data.repo.ScheduleRepository
 import com.salesdrive.data.repo.VisitRepository
 import com.salesdrive.gleo.GleoAction.Status
 import com.salesdrive.trip.OpenTripPolicy
@@ -74,10 +75,31 @@ class GleoActionReceiver : BroadcastReceiver() {
 class GleoActionHandler @Inject constructor(
     private val trips: TripDao,
     private val visits: VisitRepository,
+    private val schedules: ScheduleRepository,
 ) {
     suspend fun handle(action: String, actionParam: String?): String = when (action) {
         GleoAction.RECORD_CLIENT_VISIT -> recordVisit(GleoAction.params(actionParam))
+        GleoAction.RECORD_SCHEDULE -> recordSchedule(GleoAction.params(actionParam))
         else -> GleoAction.callback(action, Status.FAIL, "This app does not support that request.")
+    }
+
+    private suspend fun recordSchedule(p: Map<String, String>): String {
+        val fn = GleoAction.RECORD_SCHEDULE
+        val title = p["title"]
+            ?: return GleoAction.callback(fn, Status.ASKING, "What is the plan?", mapOf("missingField" to "title"))
+        val date = GleoAction.scheduleDate(p, LocalDate.now())
+            ?: return GleoAction.callback(fn, Status.ASKING, "What day is the plan on?", mapOf("missingField" to "when"))
+        val schedule = GleoAction.schedule(p, title, date)
+        val id = schedules.save(schedule)
+        Log.i("GleoAction", "schedule #$id saved for $date")
+        return GleoAction.callback(
+            fn, Status.SUCCESS, "The plan was saved to the calendar.",
+            mapOf(
+                "title" to schedule.title,
+                "date" to "${date.monthValue}월 ${date.dayOfMonth}일",
+                "time" to schedule.time?.toString(),
+            ),
+        )
     }
 
     private suspend fun recordVisit(p: Map<String, String>): String {

@@ -2,9 +2,11 @@ package com.salesdrive.gleo
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.salesdrive.data.db.Schedule
 import com.salesdrive.voice.CompanyName
 import com.salesdrive.voice.DateFinder
 import com.salesdrive.voice.ParsedVisit
+import com.salesdrive.voice.TimeFinder
 import java.time.LocalDate
 
 /**
@@ -14,6 +16,7 @@ import java.time.LocalDate
  */
 object GleoAction {
     const val RECORD_CLIENT_VISIT = "RECORD_CLIENT_VISIT"
+    const val RECORD_SCHEDULE = "RECORD_SCHEDULE"
     const val EXTRA_ACTION_PARAM = "ACTION_PARAM"
     const val RESPONSE_ACTION = "ai.pleos.playground.intent.action.APP_ACTION_RESPONSE"
 
@@ -71,6 +74,20 @@ object GleoAction {
 
     /** Gleo가 이미 정리한 기록인지. 원문이 이어 붙인 값이라 다시 파싱하면 정리된 값이 망가진다 */
     fun isFromGleo(rawUtterance: String) = rawUtterance.startsWith(RAW_PREFIX)
+
+    /** 일정 날짜도 Gleo가 바꾼 값을 믿지 않고 말한 표현을 오늘 기준으로 계산한다 */
+    fun scheduleDate(p: Map<String, String>, today: LocalDate): LocalDate? =
+        p["when"]?.let { DateFinder.find(it, today, includeToday = true)?.date }
+
+    /** 시각은 따로 오지 않아도 날짜 표현 안에 섞여 있을 수 있다("내일 오후 3시") */
+    fun schedule(p: Map<String, String>, title: String, date: LocalDate): Schedule = Schedule(
+        date = date,
+        time = (p["time"] ?: p["when"])?.let(TimeFinder::find),
+        title = title.take(SUMMARY_MAX),
+        client = p["client"]?.let(CompanyName::normalize),
+        contact = p["contact"],
+        rawText = RAW_PREFIX + listOfNotNull(p["when"], p["time"], title, p["client"], p["contact"]).joinToString(" · "),
+    )
 
     /** 내용이 하나도 없으면 저장하지 않고 다시 묻게 한다 */
     fun isEmpty(v: ParsedVisit) = v.summary == null && v.client == null && v.followUp == null

@@ -1,14 +1,14 @@
 {
   "packageName": "com.salesdrive",
-  "appDescription": "A driving logbook for sales staff that records business trips and the client visits made at each stop.",
+  "appDescription": "A driving logbook for sales staff that records business trips, the client visits made at each stop, and upcoming plans on a calendar.",
   "invokeWord": "영업 비서",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "actionCalls": [
     {
       "type": "function",
       "function": {
         "name": "RECORD_CLIENT_VISIT",
-        "description": "Save a sales visit note for the trip the user is driving or has just finished, so it appears in the visit log.",
+        "description": "Save a note about a sales visit that already happened, for the trip the user is driving or has just finished, so it appears in the visit log.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -34,6 +34,40 @@
             }
           },
           "required": ["summary"]
+        },
+        "component": "service"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "RECORD_SCHEDULE",
+        "description": "Add a future plan to the user's calendar, such as a client meeting or something to remember on a certain day. Use this for things that will happen later, not for reporting a visit that already happened.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Short title of the plan, in the user's language, at most 20 characters."
+            },
+            "when": {
+              "type": "string",
+              "description": "The day of the plan, copied exactly in the user's own words without converting it to a date."
+            },
+            "time": {
+              "type": "string",
+              "description": "The time of day of the plan, copied exactly in the user's own words. Leave empty if the user did not say a time."
+            },
+            "client": {
+              "type": "string",
+              "description": "Name of the client company the plan is with, if any."
+            },
+            "contact": {
+              "type": "string",
+              "description": "Name and job title of the person the plan is with, if any."
+            }
+          },
+          "required": ["title", "when"]
         },
         "component": "service"
       }
