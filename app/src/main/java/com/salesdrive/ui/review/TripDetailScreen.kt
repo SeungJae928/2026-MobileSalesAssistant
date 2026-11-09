@@ -65,8 +65,11 @@ fun TripDetailScreen(viewModel: TripDetailViewModel, tripId: Long, onBack: () ->
             Row(horizontalArrangement = Arrangement.spacedBy(48.dp)) {
                 Stat("출발", TIME.format(trip.startedAt.atZone(ZONE)))
                 Stat("도착", trip.endedAt?.let { TIME.format(it.atZone(ZONE)) } ?: "주행 중")
-                Stat("계기판", "%.1f → %s".format(trip.odoStartKm, trip.odoEndKm?.let { "%.1f".format(it) } ?: "-"))
+                Stat("계기판", "%.1f → %s".format(trip.odoStartKm, Mileage.endReadingKm(trip)?.let { "%.1f".format(it) } ?: "-"))
                 Stat("주행거리", km(Mileage.distanceKm(trip)))
+            }
+            if (Mileage.isOdometerReversed(trip)) {
+                Text("계기판 값이 주행 전보다 작아 주행거리를 0으로 기록했어요", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
             }
             trip.naviDestination?.let { Text("도착지: $it", style = MaterialTheme.typography.titleMedium) }
             Text("목적", style = MaterialTheme.typography.titleMedium)

@@ -59,6 +59,22 @@ class LogbookCsvTest {
         assertEquals("업무사용비율(%),80.2", lines[header + 7])
     }
 
+    @Test fun `reversed odometer is written as zero distance with a note`() {
+        val csv = LogbookCsv.build(
+            LogbookCsv.Input(
+                from = LocalDate.of(2026, 11, 1),
+                to = LocalDate.of(2026, 11, 30),
+                vehicle = null,
+                trips = listOf(trip(1, 100.0, 0.0, Purpose.BUSINESS)),
+                drivers = mapOf(1L to DriverProfile(1, "홍길동", "영업1팀")),
+                visits = emptyMap(),
+                stops = emptyMap(),
+                zone = zone,
+            ),
+        )
+        assertTrue(csv.contains("홍길동,100.0,100.0,0.0,,0.0,계기판 값 이상(주행거리 확인 필요) / 코엑스 방문"))
+    }
+
     @Test fun `starts with a BOM so Excel reads Korean`() {
         assertTrue(build().startsWith("﻿업무용승용차 운행기록부"))
     }
