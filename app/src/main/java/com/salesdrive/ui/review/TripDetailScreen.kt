@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.salesdrive.data.Mileage
 import com.salesdrive.data.db.Visit
+import com.salesdrive.gleo.GleoAction
 import com.salesdrive.ui.common.DATE
 import com.salesdrive.ui.common.DATE_TIME
 import com.salesdrive.ui.common.PurposeButtons
@@ -130,8 +131,10 @@ private fun VisitCard(v: Visit, analyzing: Boolean, onEdit: () -> Unit, onReanal
         Field("후속", listOfNotNull(v.followUp, v.followUpDate?.let(DATE::format)).joinToString("  ·  ").ifEmpty { null })
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(onClick = onEdit, modifier = Modifier.height(56.dp)) { Text("수정", style = MaterialTheme.typography.titleMedium) }
-            OutlinedButton(onClick = onReanalyze, enabled = !analyzing, modifier = Modifier.height(56.dp)) {
-                Text(if (analyzing) "분석 중…" else "다시 분석", style = MaterialTheme.typography.titleMedium)
+            if (!GleoAction.isFromGleo(v.rawUtterance)) {
+                OutlinedButton(onClick = onReanalyze, enabled = !analyzing, modifier = Modifier.height(56.dp)) {
+                    Text(if (analyzing) "분석 중…" else "다시 분석", style = MaterialTheme.typography.titleMedium)
+                }
             }
         }
     }

@@ -67,7 +67,10 @@ object GleoAction {
         listOfNotNull(p["client"], p["contact"], p["summary"], p["followUp"], p["followUpWhen"])
             .joinToString(" · ")
             .ifEmpty { "(내용 없음)" }
-            .let { "[Gleo] $it" }
+            .let { RAW_PREFIX + it }
+
+    /** Gleo가 이미 정리한 기록인지. 원문이 이어 붙인 값이라 다시 파싱하면 정리된 값이 망가진다 */
+    fun isFromGleo(rawUtterance: String) = rawUtterance.startsWith(RAW_PREFIX)
 
     /** 내용이 하나도 없으면 저장하지 않고 다시 묻게 한다 */
     fun isEmpty(v: ParsedVisit) = v.summary == null && v.client == null && v.followUp == null
@@ -87,4 +90,5 @@ object GleoAction {
         }.toString()
 
     private const val SUMMARY_MAX = 20
+    private const val RAW_PREFIX = "[Gleo] "
 }
