@@ -52,6 +52,17 @@
             </intent-filter>
         </activity>
 
+        <!-- Gleo AI 음성 명령 → 방문 기록 (assets/schema.json의 function 이름과 action이 같아야 한다) -->
+        <receiver
+            android:name=".gleo.GleoActionReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="RECORD_CLIENT_VISIT" />
+                <!-- 에뮬레이터 Gleo 4.2 로그에는 패키지명이 붙은 이름으로 호출한다고 나온다 -->
+                <action android:name="com.salesdrive.RECORD_CLIENT_VISIT" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".trip.TripService"
             android:exported="false"

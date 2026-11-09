@@ -24,6 +24,9 @@ interface TripDao {
     @Query("SELECT id FROM Trip WHERE endedAt IS NOT NULL ORDER BY endedAt DESC LIMIT 1")
     suspend fun lastEndedId(): Long?
 
+    @Query("SELECT * FROM Trip WHERE endedAt IS NOT NULL ORDER BY endedAt DESC LIMIT 1")
+    suspend fun lastEnded(): Trip?
+
     @Query("SELECT * FROM Trip WHERE startedAt >= :from AND startedAt < :until ORDER BY startedAt")
     fun observeBetween(from: Instant, until: Instant): Flow<List<Trip>>
 
