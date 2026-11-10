@@ -114,6 +114,10 @@ interface ScheduleDao {
 
     @Query("SELECT * FROM Schedule WHERE date BETWEEN :from AND :until ORDER BY date, id")
     fun observeBetween(from: LocalDate, until: LocalDate): Flow<List<Schedule>>
+
+    /** 홈 화면: 오늘 이후 일정. 같은 날은 시간순이고 시간이 없는 일정은 뒤로 간다 */
+    @Query("SELECT * FROM Schedule WHERE date >= :from ORDER BY date, time IS NULL, time, id LIMIT :limit")
+    fun observeUpcoming(from: LocalDate, limit: Int): Flow<List<Schedule>>
 }
 
 @Dao

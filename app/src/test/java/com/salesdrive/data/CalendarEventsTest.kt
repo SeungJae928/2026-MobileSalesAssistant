@@ -41,6 +41,18 @@ class CalendarEventsTest {
         assertEquals(listOf("다음 날"), events.getValue(day.plusDays(1)).map { it.title })
     }
 
+    @Test fun `upcoming is in date order and cut at the limit`() {
+        val upcoming = CalendarEvents.upcoming(
+            listOf(
+                Schedule(id = 1, date = day.plusDays(2), title = "모레 미팅", rawText = "r"),
+                Schedule(id = 2, date = day, time = LocalTime.of(15, 0), title = "오늘 미팅", rawText = "r"),
+            ),
+            listOf(Visit(tripId = 1, rawUtterance = "r", followUp = "견적 발송", followUpDate = day.plusDays(1))),
+            limit = 2,
+        )
+        assertEquals(listOf("오늘 미팅", "견적 발송"), upcoming.map { it.title })
+    }
+
     @Test fun `follow up keeps visit details and cannot be deleted here`() {
         val event = CalendarEvents.merge(
             emptyList(),

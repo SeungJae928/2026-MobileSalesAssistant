@@ -38,6 +38,10 @@ object CalendarEvents {
             .groupBy { it.date }
     }
 
+    /** 날짜 순으로 이어 붙여 앞에서 [limit]개만 남긴다 */
+    fun upcoming(schedules: List<Schedule>, followUps: List<Visit>, limit: Int): List<CalendarEvent> =
+        merge(schedules, followUps).toSortedMap().values.flatten().take(limit)
+
     /** 일요일로 시작하는 주 단위 칸. 그 달이 아닌 칸은 null */
     fun weeks(month: YearMonth): List<List<LocalDate?>> {
         val blanks = month.atDay(1).dayOfWeek.value % 7

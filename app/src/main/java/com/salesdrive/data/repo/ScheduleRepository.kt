@@ -21,6 +21,11 @@ class ScheduleRepository @Inject constructor(
 
     suspend fun delete(id: Long) = schedules.delete(id)
 
+    fun observeUpcoming(from: LocalDate, limit: Int): Flow<List<CalendarEvent>> =
+        combine(schedules.observeUpcoming(from, limit), visits.observeUpcoming(from, limit)) { plans, followUps ->
+            CalendarEvents.upcoming(plans, followUps, limit)
+        }
+
     fun observeMonth(month: YearMonth): Flow<Map<LocalDate, List<CalendarEvent>>> {
         val from = month.atDay(1)
         val until = month.atEndOfMonth()
