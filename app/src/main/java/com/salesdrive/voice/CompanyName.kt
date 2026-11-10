@@ -30,11 +30,24 @@ internal object CompanyName {
     private val LATIN = Regex("(?<![A-Za-z0-9가-힣])([A-Za-z]{1,4})\\s?($suffixPattern)$AFTER_SUFFIX")
     private val ONE_LETTER = Regex(letterPattern)
 
-    /** 문장 안의 "에이 기업", "시물산", "b전자"를 "A기업", "C물산", "B전자"로 바꾼다 */
+    /** "삼성 전자"처럼 끊어 받아쓴 이름. "결제 시스템"처럼 일반 명사로 흔한 끝말은 붙이지 않는다 */
+    private val SPACED = Regex("(?<![A-Za-z0-9가-힣])([가-힣]{2,})\\s(전자|상사|물산|건설|제약|화학|증권|은행)$AFTER_SUFFIX")
+
+    /** 앞말이 회사 이름이 아닌 경우: 시간·지시어, 직함, 조사나 관형형 어미로 끝나는 말 */
+    private val NOT_A_NAME = Regex(
+        "^(오늘|내일|어제|방금|아까|다음|이번|지난|우리|저희|해당|담당|거래|관련|다른|모든|신규|기존|협력|고객)$|" +
+            "(부장|차장|과장|대리|주임|사원|팀장|실장|이사|상무|전무|사장|대표|본부장|센터장|매니저|소장|원장|국장|님)$|" +
+            "[의에은는이가을를와과도로한난된던할]$|(${SUFFIXES.joinToString("|")})$",
+    )
+
+    /** 문장 안의 "에이 기업", "시물산", "b전자", "삼성 전자"를 "A기업", "C물산", "B전자", "삼성전자"로 바꾼다 */
     fun normalize(text: String): String {
         val spelled = SPOKEN.replace(text) { m ->
             ONE_LETTER.findAll(m.groupValues[1]).joinToString("") { LETTERS.getValue(it.value) } + m.groupValues[2]
         }
-        return LATIN.replace(spelled) { m -> m.groupValues[1].uppercase() + m.groupValues[2] }
+        val latin = LATIN.replace(spelled) { m -> m.groupValues[1].uppercase() + m.groupValues[2] }
+        return SPACED.replace(latin) { m ->
+            if (NOT_A_NAME.containsMatchIn(m.groupValues[1])) m.value else m.groupValues[1] + m.groupValues[2]
+        }
     }
 }
