@@ -46,7 +46,7 @@ fun TripRow(summary: TripSummary, onClick: () -> Unit) {
                     .ifEmpty { if (trip.endedAt == null) "기록 중" else "도착지 미상" }
                 Text(place, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val note = buildList {
-                    summary.visitNote?.let(::add)
+                    summary.visitNote?.let { add(if (summary.visitCount > 1) "$it 외 ${summary.visitCount - 1}건" else it) }
                     if (summary.stopCount > 0) add("경유 ${summary.stopCount}회")
                 }.joinToString("  ·  ").ifEmpty { if (trip.endedAt != null) "방문 기록 없음" else "" }
                 Text(
