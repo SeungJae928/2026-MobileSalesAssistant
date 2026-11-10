@@ -12,6 +12,11 @@ interface VisitStore {
     suspend fun saveRaw(tripId: Long, utterance: String): Long
 }
 
+/** 목적지에 도착했을 때 읽어 줄 지난 방문·오늘 일정. 처음 가는 곳이면 null */
+interface ArrivalBriefer {
+    suspend fun briefing(place: String): String?
+}
+
 /**
  * 정차가 확정되면 먼저 방문을 기록할지 묻고([VisitPrompt.Confirm]), 운전자가 원하면 방문 내용을 받아 원문 그대로 저장한다.
  * - 확인 질문에 답이 없으면 아무것도 정하지 않고 화면 버튼에 맡긴다. 그대로 출발하면 경유 정차로 남는다.
@@ -24,16 +29,25 @@ class VisitInterviewer @Inject constructor(
     private val prompter: VoicePrompter,
     private val capture: SpeechCapture,
     private val visits: VisitStore,
+    private val briefer: ArrivalBriefer,
 ) {
     /** 서비스 코루틴에서 호출. 새 요청이 오면 이전 대화는 취소된다 */
     suspend fun run() {
         recorder.visitPrompts.collectLatest { prompt ->
             when (prompt) {
                 VisitPrompt.Confirm -> confirm()
-                is VisitPrompt.Ask -> interview(prompt.tripId, prompt.answer, question(prompt))
+                is VisitPrompt.Ask -> ask(prompt)
                 VisitPrompt.Cancel -> Unit
             }
         }
+    }
+
+    /** 내비로 도착한 곳이 아는 거래처면 지난 방문을 먼저 읽어 준다. 한 번에 읽기엔 길어서 질문과 나눠 말한다 */
+    internal suspend fun ask(prompt: VisitPrompt.Ask) {
+        val place = prompt.place.takeIf { prompt.greet && prompt.tripId != null && prompt.answer == null }
+        val briefing = place?.let { briefer.briefing(it) }
+        if (briefing != null) prompter.speak("$place 도착하셨네요. $briefing")
+        interview(prompt.tripId, prompt.answer, if (briefing != null) QUESTION else question(prompt))
     }
 
     /** "응"이면 기록이 확정되어 곧 [VisitPrompt.Ask]가 오고, 이 대화는 그쪽으로 넘어간다 */

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.room.Room
 import com.salesdrive.data.db.SalesDriveDatabase
+import com.salesdrive.data.repo.ScheduleRepository
 import com.salesdrive.data.repo.TripRepository
 import com.salesdrive.data.repo.VisitRepository
 import com.salesdrive.navi.NaviSource
@@ -16,6 +17,7 @@ import com.salesdrive.vehicle.PleosVehicleSource
 import com.salesdrive.vehicle.VehicleSignalSource
 import com.salesdrive.vehicle.fake.DemoSwitchSource
 import com.salesdrive.vehicle.fake.FakeVehicleSource
+import com.salesdrive.voice.ArrivalBriefer
 import com.salesdrive.voice.FallbackVisitParser
 import com.salesdrive.voice.LlmVisitParser
 import com.salesdrive.voice.PleosLlmClient
@@ -104,6 +106,7 @@ object AppModule {
 abstract class BindingModule {
     @Binds abstract fun tripStore(repository: TripRepository): TripStore
     @Binds abstract fun visitStore(repository: VisitRepository): VisitStore
+    @Binds abstract fun arrivalBriefer(repository: ScheduleRepository): ArrivalBriefer
     @Binds abstract fun voicePrompter(impl: PleosVoicePrompter): VoicePrompter
     @Binds abstract fun speechCapture(impl: PleosSpeechCapture): SpeechCapture
 }

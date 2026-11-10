@@ -45,6 +45,50 @@ class VisitInterviewerTest {
         }
     }
 
+    private object NoBriefing : ArrivalBriefer {
+        override suspend fun briefing(place: String): String? = null
+    }
+
+    private class KnownClient(val text: String) : ArrivalBriefer {
+        var asked = false
+        override suspend fun briefing(place: String): String? {
+            asked = true
+            return text
+        }
+    }
+
+    @Test fun `known client is briefed before the visit question`() = runTest {
+        val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
+        val spoken = Spoken()
+        val interviewer = VisitInterviewer(recorder, spoken, Script("납품 완료"), Visits(), KnownClient("지난 방문은 11월 5일입니다."))
+
+        interviewer.ask(VisitPrompt.Ask(7, place = "A상사 본사", greet = true))
+
+        assertEquals(
+            listOf("A상사 본사 도착하셨네요. 지난 방문은 11월 5일입니다.", VisitInterviewer.QUESTION, VisitInterviewer.SAVED),
+            spoken.lines,
+        )
+    }
+
+    @Test fun `first visit keeps the plain greeting`() = runTest {
+        val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
+        val spoken = Spoken()
+
+        VisitInterviewer(recorder, spoken, Script("납품 완료"), Visits(), NoBriefing).ask(VisitPrompt.Ask(7, place = "A상사 본사", greet = true))
+
+        assertEquals(listOf("A상사 본사 도착하셨네요. ${VisitInterviewer.QUESTION}", VisitInterviewer.SAVED), spoken.lines)
+    }
+
+    @Test fun `no briefing unless navi named the arrival`() = runTest {
+        val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
+        val briefer = KnownClient("지난 방문")
+
+        VisitInterviewer(recorder, Spoken(), Script("납품 완료"), Visits(), briefer).ask(VisitPrompt.Ask(7))
+        VisitInterviewer(recorder, Spoken(), Script(), Visits(), briefer).ask(VisitPrompt.Ask(7, answer = "바로 답함", place = "A상사", greet = true))
+
+        assertEquals(false, briefer.asked)
+    }
+
     /** 신호를 테스트가 직접 밀어 넣는 소스. 주행 하나를 만들고 도착시켜 ASKING 상태로 만든다 */
     private class ManualSource : VehicleSignalSource {
         val flow = MutableSharedFlow<VehicleSnapshot>()
@@ -74,7 +118,7 @@ class VisitInterviewerTest {
         val spoken = Spoken()
         val visits = Visits()
 
-        VisitInterviewer(recorder, spoken, Script("A상사 김부장 납품 미팅"), visits).interview(tripId = 7)
+        VisitInterviewer(recorder, spoken, Script("A상사 김부장 납품 미팅"), visits, NoBriefing).interview(tripId = 7)
 
         assertEquals(listOf(7L to "A상사 김부장 납품 미팅"), visits.saved)
         assertEquals(listOf(VisitInterviewer.QUESTION, VisitInterviewer.SAVED), spoken.lines)
@@ -85,7 +129,7 @@ class VisitInterviewerTest {
         val spoken = Spoken()
         val visits = Visits()
 
-        VisitInterviewer(recorder, spoken, Script(null, null), visits).interview(tripId = 7)
+        VisitInterviewer(recorder, spoken, Script(null, null), visits, NoBriefing).interview(tripId = 7)
 
         assertTrue(visits.saved.isEmpty())
         assertEquals(listOf(VisitInterviewer.QUESTION, VisitInterviewer.RETRY, VisitInterviewer.LATER), spoken.lines)
@@ -95,7 +139,7 @@ class VisitInterviewerTest {
         val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
         val visits = Visits()
 
-        VisitInterviewer(recorder, Spoken(), Script("어", "D상사 재계약 논의"), visits).interview(tripId = 7)
+        VisitInterviewer(recorder, Spoken(), Script("어", "D상사 재계약 논의"), visits, NoBriefing).interview(tripId = 7)
 
         assertEquals(listOf(7L to "D상사 재계약 논의"), visits.saved)
     }
@@ -113,7 +157,7 @@ class VisitInterviewerTest {
         val recorder = TripRecorder(ManualSource(), OneTripStore(), NoNaviSource())
         val visits = Visits()
 
-        VisitInterviewer(recorder, Spoken(), Script(null, "개인 볼일"), visits).interview(tripId = 7)
+        VisitInterviewer(recorder, Spoken(), Script(null, "개인 볼일"), visits, NoBriefing).interview(tripId = 7)
 
         assertEquals(listOf(7L to "개인 볼일"), visits.saved)
     }
@@ -122,7 +166,7 @@ class VisitInterviewerTest {
         val source = ManualSource()
         val recorder = TripRecorder(source, OneTripStore(), NoNaviSource())
         val visits = Visits()
-        val interviewer = VisitInterviewer(recorder, Spoken(), Script("B물산 견적 회신"), visits)
+        val interviewer = VisitInterviewer(recorder, Spoken(), Script("B물산 견적 회신"), visits, NoBriefing)
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val jobs = listOf(launch(dispatcher) { recorder.run() }, launch(dispatcher) { interviewer.run() })
 
@@ -140,7 +184,7 @@ class VisitInterviewerTest {
         val recorder = TripRecorder(source, OneTripStore(), NoNaviSource())
         val spoken = Spoken()
         val visits = Visits()
-        val interviewer = VisitInterviewer(recorder, spoken, Script(*answers), visits)
+        val interviewer = VisitInterviewer(recorder, spoken, Script(*answers), visits, NoBriefing)
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val jobs = listOf(launch(dispatcher) { recorder.run() }, launch(dispatcher) { interviewer.run() })
         source.driveAndArrive()
@@ -202,7 +246,7 @@ class VisitInterviewerTest {
         val recorder = TripRecorder(source, OneTripStore(), NoNaviSource())
         val capture = Script().apply { hangOnNext = true }
         val visits = Visits()
-        val interviewer = VisitInterviewer(recorder, Spoken(), capture, visits)
+        val interviewer = VisitInterviewer(recorder, Spoken(), capture, visits, NoBriefing)
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val jobs = listOf(launch(dispatcher) { recorder.run() }, launch(dispatcher) { interviewer.run() })
 

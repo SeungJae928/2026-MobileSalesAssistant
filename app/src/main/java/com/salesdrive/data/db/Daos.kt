@@ -103,7 +103,21 @@ interface VisitDao {
     /** "지난번 A사 미팅 알려줘": 해당 거래처 최근 방문 몇 건만 LLM에 넘긴다 */
     @Query("SELECT * FROM Visit WHERE client = :client ORDER BY id DESC LIMIT :limit")
     suspend fun recentByClient(client: String, limit: Int): List<Visit>
+
+    /** 도착 안내: 목적지 이름에 거래처 이름이 들어 있는 가장 최근 방문. 한 글자 이름은 우연히 겹치므로 뺀다 */
+    @Query(
+        "SELECT Visit.*, Trip.startedAt AS visitedAt FROM Visit INNER JOIN Trip ON Trip.id = Visit.tripId " +
+            "WHERE length(Visit.client) >= 2 AND instr(:place, Visit.client) > 0 " +
+            "ORDER BY Trip.startedAt DESC, Visit.id DESC LIMIT 1",
+    )
+    suspend fun latestAtPlace(place: String): ClientVisit?
 }
+
+/** 방문과 그 방문을 다녀온 시각 */
+data class ClientVisit(
+    @Embedded val visit: Visit,
+    val visitedAt: Instant,
+)
 
 @Dao
 interface ScheduleDao {
@@ -118,6 +132,13 @@ interface ScheduleDao {
     /** 홈 화면: 오늘 이후 일정. 같은 날은 시간순이고 시간이 없는 일정은 뒤로 간다 */
     @Query("SELECT * FROM Schedule WHERE date >= :from ORDER BY date, time IS NULL, time, id LIMIT :limit")
     fun observeUpcoming(from: LocalDate, limit: Int): Flow<List<Schedule>>
+
+    /** 도착 안내: 이 목적지 거래처와 잡아 둔 그날의 첫 일정 */
+    @Query(
+        "SELECT * FROM Schedule WHERE date = :date AND length(client) >= 2 AND instr(:place, client) > 0 " +
+            "ORDER BY time IS NULL, time, id LIMIT 1",
+    )
+    suspend fun firstAtPlace(place: String, date: LocalDate): Schedule?
 }
 
 @Dao
