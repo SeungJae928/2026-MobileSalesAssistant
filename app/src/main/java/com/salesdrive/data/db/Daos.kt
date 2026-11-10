@@ -43,8 +43,9 @@ interface TripDao {
     @Query(
         "SELECT Trip.*, " +
             "(SELECT COUNT(*) FROM TripStop WHERE TripStop.tripId = Trip.id) AS stopCount, " +
-            "(SELECT COALESCE(summary, rawUtterance) FROM Visit WHERE Visit.tripId = Trip.id ORDER BY id LIMIT 1) AS visitNote, " +
-            "(SELECT client FROM Visit WHERE Visit.tripId = Trip.id AND client IS NOT NULL ORDER BY id LIMIT 1) AS client " +
+            "(SELECT COUNT(*) FROM Visit WHERE Visit.tripId = Trip.id) AS visitCount, " +
+            "(SELECT COALESCE(summary, rawUtterance) FROM Visit WHERE Visit.tripId = Trip.id ORDER BY id DESC LIMIT 1) AS visitNote, " +
+            "(SELECT client FROM Visit WHERE Visit.tripId = Trip.id AND client IS NOT NULL ORDER BY id DESC LIMIT 1) AS client " +
             "FROM Trip ORDER BY startedAt DESC LIMIT :limit",
     )
     fun observeRecentSummaries(limit: Int): Flow<List<TripSummary>>
@@ -52,17 +53,19 @@ interface TripDao {
     @Query(
         "SELECT Trip.*, " +
             "(SELECT COUNT(*) FROM TripStop WHERE TripStop.tripId = Trip.id) AS stopCount, " +
-            "(SELECT COALESCE(summary, rawUtterance) FROM Visit WHERE Visit.tripId = Trip.id ORDER BY id LIMIT 1) AS visitNote, " +
-            "(SELECT client FROM Visit WHERE Visit.tripId = Trip.id AND client IS NOT NULL ORDER BY id LIMIT 1) AS client " +
+            "(SELECT COUNT(*) FROM Visit WHERE Visit.tripId = Trip.id) AS visitCount, " +
+            "(SELECT COALESCE(summary, rawUtterance) FROM Visit WHERE Visit.tripId = Trip.id ORDER BY id DESC LIMIT 1) AS visitNote, " +
+            "(SELECT client FROM Visit WHERE Visit.tripId = Trip.id AND client IS NOT NULL ORDER BY id DESC LIMIT 1) AS client " +
             "FROM Trip WHERE startedAt >= :from AND startedAt < :until ORDER BY startedAt DESC",
     )
     fun observeSummariesBetween(from: Instant, until: Instant): Flow<List<TripSummary>>
 }
 
-/** 목록 한 줄: 주행, 경유 정차 횟수, 첫 방문의 요약(없으면 원문)과 거래처 */
+/** 목록 한 줄: 주행, 경유 정차 횟수, 방문 건수, 가장 최근 방문의 요약(없으면 원문)과 거래처 */
 data class TripSummary(
     @Embedded val trip: Trip,
     val stopCount: Int,
+    val visitCount: Int = 0,
     val visitNote: String? = null,
     val client: String? = null,
 )

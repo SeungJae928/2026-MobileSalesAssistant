@@ -36,6 +36,11 @@ class GleoActionTest {
 
     private val today = LocalDate.of(2026, 11, 5)
 
+    @Test fun `company name spoken as letters is restored in the summary and title`() {
+        assertEquals("B전자 납품 미팅", GleoAction.visit(mapOf("summary" to "비전자 납품 미팅"), today).summary)
+        assertEquals("A기업 제안 미팅", GleoAction.schedule(emptyMap(), "에이 기업 제안 미팅", today).title)
+    }
+
     @Test fun `follow up date is computed from the spoken words and summary is trimmed`() {
         val v = GleoAction.visit(mapOf("summary" to "가".repeat(30), "followUpWhen" to "다음 주 화요일까지"), today)
         assertEquals(20, v.summary!!.length)
