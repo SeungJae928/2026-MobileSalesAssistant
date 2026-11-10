@@ -57,7 +57,7 @@ object GleoAction {
     fun visit(p: Map<String, String>, today: LocalDate): ParsedVisit = ParsedVisit(
         client = p["client"]?.let(CompanyName::normalize),
         contact = p["contact"],
-        summary = p["summary"]?.take(SUMMARY_MAX),
+        summary = p["summary"]?.let(CompanyName::normalize)?.take(SUMMARY_MAX),
         followUp = p["followUp"],
         followUpDate = p["followUpWhen"]?.let { DateFinder.find(it, today)?.date },
     )
@@ -83,7 +83,7 @@ object GleoAction {
     fun schedule(p: Map<String, String>, title: String, date: LocalDate): Schedule = Schedule(
         date = date,
         time = (p["time"] ?: p["when"])?.let(TimeFinder::find),
-        title = title.take(SUMMARY_MAX),
+        title = CompanyName.normalize(title).take(SUMMARY_MAX),
         client = p["client"]?.let(CompanyName::normalize),
         contact = p["contact"],
         rawText = RAW_PREFIX + listOfNotNull(p["when"], p["time"], title, p["client"], p["contact"]).joinToString(" · "),
