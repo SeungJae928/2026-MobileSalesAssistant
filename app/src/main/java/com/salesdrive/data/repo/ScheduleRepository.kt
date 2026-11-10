@@ -5,6 +5,8 @@ import com.salesdrive.data.CalendarEvents
 import com.salesdrive.data.db.Schedule
 import com.salesdrive.data.db.ScheduleDao
 import com.salesdrive.data.db.VisitDao
+import com.salesdrive.voice.ArrivalBriefer
+import com.salesdrive.voice.Briefing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
@@ -16,7 +18,10 @@ import javax.inject.Singleton
 class ScheduleRepository @Inject constructor(
     private val schedules: ScheduleDao,
     private val visits: VisitDao,
-) {
+) : ArrivalBriefer {
+    override suspend fun briefing(place: String): String? =
+        Briefing.arrival(visits.latestAtPlace(place), schedules.firstAtPlace(place, LocalDate.now()))
+
     suspend fun save(schedule: Schedule): Long = schedules.insert(schedule)
 
     suspend fun delete(id: Long) = schedules.delete(id)
