@@ -57,12 +57,12 @@ fun HomeScreen(viewModel: HomeViewModel, onOpenTrip: (Long) -> Unit, onOpenProfi
                     Stat("이번 달 업무 비율", ui.month.businessRatio?.let { "%.0f%%".format(it * 100) } ?: "-")
                 }
             }
-            SectionCard("다가오는 후속 일정") {
-                if (ui.upcoming.isEmpty()) Text("예정된 후속 일정이 없어요", style = MaterialTheme.typography.bodyLarge)
-                ui.upcoming.forEach { v ->
-                    val who = listOfNotNull(v.client, v.contact).joinToString(" ")
+            SectionCard("다가오는 일정") {
+                if (ui.upcoming.isEmpty()) Text("예정된 일정이 없어요", style = MaterialTheme.typography.bodyLarge)
+                ui.upcoming.forEach { event ->
+                    val who = listOfNotNull(event.client, event.contact).joinToString(" ").takeIf(String::isNotEmpty)?.let { "($it)" }
                     Text(
-                        "${v.followUpDate?.let(DATE::format)}  ${v.followUp ?: v.summary ?: "후속 일정"}${if (who.isNotEmpty()) "  ($who)" else ""}",
+                        listOfNotNull(DATE.format(event.date), event.time?.toString(), event.title, who).joinToString("  "),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }

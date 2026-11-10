@@ -49,8 +49,6 @@ class VisitRepository @Inject constructor(
 
     fun observeByTrip(tripId: Long): Flow<List<Visit>> = visitDao.observeByTrip(tripId)
 
-    fun observeUpcoming(from: LocalDate, limit: Int): Flow<List<Visit>> = visitDao.observeUpcoming(from, limit)
-
     /** 확인 화면에서 사람이 고친 값 */
     suspend fun update(visit: Visit) = visitDao.update(visit)
 
