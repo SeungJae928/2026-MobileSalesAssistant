@@ -69,7 +69,7 @@ val RecorderState.canChoosePurpose: Boolean
 fun VisitActions(state: RecorderState, onRecord: () -> Unit, onSkip: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Button(onClick = onRecord, enabled = state.canRecordVisit, modifier = Modifier.height(72.dp)) {
-            Text("🎤 방문 기록", style = MaterialTheme.typography.titleLarge)
+            Text("방문 기록", style = MaterialTheme.typography.titleLarge)
         }
         if (state.canSkipVisit) {
             OutlinedButton(onClick = onSkip, modifier = Modifier.height(72.dp)) {

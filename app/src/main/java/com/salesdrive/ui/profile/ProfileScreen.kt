@@ -21,11 +21,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.salesdrive.ui.common.SectionCard
 import com.salesdrive.ui.common.TIME
 import com.salesdrive.ui.common.ZONE
+import com.salesdrive.ui.theme.ThemeMode
 
 /** 내 정보: 운행기록부 성명·부서와 시트 메모리 번호. 운전자 구분은 차량 프로필이 한다 */
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
+    val theme by viewModel.theme.collectAsStateWithLifecycle()
 
     Row(Modifier.fillMaxSize().padding(32.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         Column(
@@ -75,7 +77,15 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 ui.message?.let { Text(it, Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyLarge) }
             }
         }
-        Column(Modifier.weight(0.8f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Column(
+            Modifier.weight(0.8f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            SectionCard("화면 테마") {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    ThemeMode.entries.forEach { m -> SlotButton(m.label, theme == m) { viewModel.setTheme(m) } }
+                }
+            }
             SectionCard("차량 프로필") {
                 Note("운전자는 차량 화면 오른쪽 위 프로필로 구분해요. 별도 로그인은 없어요.")
                 Note("주행·방문 기록과 내보낸 운행기록부는 차량 프로필마다 따로 저장되고, 다른 프로필에서는 보이지 않아요.")

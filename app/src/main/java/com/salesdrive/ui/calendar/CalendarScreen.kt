@@ -123,7 +123,7 @@ private fun MonthGrid(ui: CalendarUi, onSelect: (LocalDate) -> Unit, modifier: M
                     day,
                     Modifier.weight(1f).padding(vertical = 4.dp),
                     style = MaterialTheme.typography.titleMedium,
-                    color = weekendColor(i) ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = weekendColor(i) ?: MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -137,8 +137,7 @@ private fun MonthGrid(ui: CalendarUi, onSelect: (LocalDate) -> Unit, modifier: M
 
 @Composable
 private fun weekendColor(columnFromSunday: Int): Color? = when (columnFromSunday) {
-    0 -> MaterialTheme.colorScheme.error
-    6 -> MaterialTheme.colorScheme.primary
+    0, 6 -> MaterialTheme.colorScheme.onSurfaceVariant
     else -> null
 }
 

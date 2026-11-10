@@ -8,6 +8,8 @@ import com.salesdrive.data.repo.VehicleRepository
 import com.salesdrive.data.repo.registeredPlate
 import com.salesdrive.profile.SeatRecall
 import com.salesdrive.profile.SeatRestorer
+import com.salesdrive.ui.theme.ThemeMode
+import com.salesdrive.ui.theme.ThemeStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,10 +38,15 @@ class ProfileViewModel @Inject constructor(
     private val profiles: ProfileRepository,
     private val restorer: SeatRestorer,
     private val vehicles: VehicleRepository,
+    private val themes: ThemeStore,
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(ProfileUi())
     val ui: StateFlow<ProfileUi> = _ui.asStateFlow()
+    val theme: StateFlow<ThemeMode> = themes.mode
+
+    /** 저장 버튼과 상관없이 고르는 즉시 적용한다 */
+    fun setTheme(mode: ThemeMode) = themes.set(mode)
 
     init {
         viewModelScope.launch {
