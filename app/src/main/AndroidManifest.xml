@@ -52,9 +52,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Gleo AI 음성 명령 → 방문 기록 (assets/schema.json의 function 이름과 action이 같아야 한다) -->
+        <!-- Gleo AI 음성 명령 → 방문 기록 (assets/schema.json의 function 이름과 action이 같아야 한다)
+             APP_ACTION은 Gleo만 가진 서명 권한이라 다른 앱은 이 수신부를 호출할 수 없다 -->
         <receiver
             android:name=".gleo.GleoActionReceiver"
+            android:permission="ai.umos.gleo.permission.APP_ACTION"
             android:exported="true">
             <intent-filter>
                 <action android:name="RECORD_CLIENT_VISIT" />
