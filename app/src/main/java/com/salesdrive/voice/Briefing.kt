@@ -1,5 +1,6 @@
 package com.salesdrive.voice
 
+import com.salesdrive.data.CalendarEvent
 import com.salesdrive.data.db.ClientVisit
 import com.salesdrive.data.db.Schedule
 import java.time.LocalDate
@@ -23,6 +24,15 @@ internal object Briefing {
         }
         plan?.let { add("오늘 ${it.time?.let { t -> spokenTime(t) + " " }.orEmpty()}${it.title} 일정이 있습니다.") }
     }.joinToString(" ").ifEmpty { null }
+
+    /** 시동을 걸었을 때 오늘 남은 일정. 시간이 지난 일정은 빼고, 남은 일정이 없으면 null */
+    fun today(events: List<CalendarEvent>, now: LocalTime): String? {
+        val left = events.filter { it.time == null || !it.time.isBefore(now) }
+        val first = left.firstOrNull() ?: return null
+        val client = first.client?.takeUnless { it in first.title }
+        val what = listOfNotNull(first.time?.let { spokenTime(it) + "," }, client, first.title).joinToString(" ")
+        return "오늘 일정이 ${left.size}건 있습니다. 첫 일정은 ${what}입니다."
+    }
 
     fun spokenDate(date: LocalDate): String = "${date.monthValue}월 ${date.dayOfMonth}일"
 

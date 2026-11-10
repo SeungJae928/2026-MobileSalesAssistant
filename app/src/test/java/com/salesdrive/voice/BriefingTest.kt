@@ -1,5 +1,6 @@
 package com.salesdrive.voice
 
+import com.salesdrive.data.CalendarEvent
 import com.salesdrive.data.db.ClientVisit
 import com.salesdrive.data.db.Schedule
 import com.salesdrive.data.db.Visit
@@ -47,6 +48,27 @@ class BriefingTest {
 
     @Test fun `nothing known means no briefing`() {
         assertNull(Briefing.arrival(null, null, seoul))
+    }
+
+    private fun event(time: LocalTime?, title: String = "제안 미팅", client: String? = null) =
+        CalendarEvent(today, time, CalendarEvent.Kind.SCHEDULE, title, client)
+
+    @Test fun `today counts what is left and names the first`() {
+        val events = listOf(event(LocalTime.of(9, 0), "오전 점검"), event(LocalTime.of(15, 0), client = "A기업"), event(null, "샘플 보내기"))
+        assertEquals("오늘 일정이 2건 있습니다. 첫 일정은 오후 3시, A기업 제안 미팅입니다.", Briefing.today(events, LocalTime.of(10, 0)))
+    }
+
+    @Test fun `today keeps an untimed plan and does not repeat the client`() {
+        assertEquals("오늘 일정이 1건 있습니다. 첫 일정은 샘플 보내기입니다.", Briefing.today(listOf(event(null, "샘플 보내기")), LocalTime.of(23, 0)))
+        assertEquals(
+            "오늘 일정이 1건 있습니다. 첫 일정은 A기업 제안 미팅입니다.",
+            Briefing.today(listOf(event(null, "A기업 제안 미팅", "A기업")), LocalTime.of(9, 0)),
+        )
+    }
+
+    @Test fun `nothing left today is silent`() {
+        assertNull(Briefing.today(emptyList(), LocalTime.of(9, 0)))
+        assertNull(Briefing.today(listOf(event(LocalTime.of(9, 0))), LocalTime.of(10, 0)))
     }
 
     @Test fun `spoken time uses a 12 hour clock`() {
