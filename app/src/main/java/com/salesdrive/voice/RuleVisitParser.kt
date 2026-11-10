@@ -13,16 +13,17 @@ import java.time.temporal.TemporalAdjusters
 object RuleVisitParser : VisitParser {
 
     override suspend fun parse(utterance: String, destination: String?, today: LocalDate): ParsedVisit? =
-        parseNow(utterance, today)
+        parseNow(utterance, today, destination)
 
-    fun parseNow(utterance: String, today: LocalDate): ParsedVisit? {
+    /** 말에 거래처가 없으면 내비 목적지가 회사 이름일 때 그 이름을 쓴다. 출퇴근·개인 주행에는 붙이지 않는다 */
+    fun parseNow(utterance: String, today: LocalDate, destination: String? = null): ParsedVisit? {
         val text = CompanyName.normalize(utterance.trim().replace(Regex("\\s+"), " "))
         if (text.isEmpty()) return null
 
-        val client = findClient(text)
+        val spokenClient = findClient(text)
         val contact = findContact(text)
         var rest = text
-        client?.let { rest = removeWithJosa(rest, it) }
+        spokenClient?.let { rest = removeWithJosa(rest.replace(CORPORATE_MARK, ""), it.removePrefix("(주)")) }
         contact?.raw?.let { rest = removeWithJosa(rest, it) }
 
         val segments = rest.split(SEGMENT_SPLIT).map(String::trim).filter(String::isNotEmpty)
@@ -56,23 +57,28 @@ object RuleVisitParser : VisitParser {
 
         val summary = summaryParts.firstNotNullOfOrNull { clean(it).takeIf(String::isNotEmpty) }
             ?.take(SUMMARY_MAX)?.trim()
+        val purpose = purposeOf(text, spokenClient != null || contact != null)
+        val client = spokenClient ?: destination?.takeIf { purpose == null || purpose == Purpose.BUSINESS }
+            ?.let { findClient(CompanyName.normalize(it)) }
         return ParsedVisit(
             client = client,
             contact = contact?.display,
             summary = summary,
             followUp = followUp?.let(::clean)?.takeIf(String::isNotEmpty),
             followUpDate = followUpDate,
-            purpose = purposeOf(text, client != null || contact != null),
+            purpose = purpose,
         )
     }
 
     // --- 거래처 ---
 
+    private val CORPORATE_MARK = Regex("\\(주\\)\\s*|㈜\\s*|주식회사\\s*")
+
     private val COMPANY_SUFFIX = Regex(
         "(" + CompanyName.SUFFIXES.joinToString("|") + ")$",
     )
     private val BRANCH = setOf("본사", "지사", "공장", "연구소", "사무소", "지점", "센터", "본점")
-    private val JOSA = listOf("에서는", "에서", "에게", "한테", "이랑", "하고", "랑", "에", "의", "와", "과", "은", "는", "이", "가", "을", "를", "도")
+    private val JOSA = listOf("에서는", "에서", "에게", "께서", "께", "한테", "이랑", "하고", "랑", "에", "의", "와", "과", "은", "는", "이", "가", "을", "를", "도")
 
     private fun stripJosa(token: String): String {
         val word = token.trimEnd(',', '.', '!', '?')
@@ -116,23 +122,27 @@ object RuleVisitParser : VisitParser {
 
     // --- 요약·후속 ---
 
-    private val SEGMENT_SPLIT = Regex("[,.!?]|\\s그리고\\s|\\s그리고$")
+    private val SEGMENT_SPLIT = Regex("[,.!?]|\\s그리고\\s|\\s그리고$|(?<=했고요|했고|했는데)\\s+")
     private val DATE_TAIL = Regex("^(까지는|까지|에는|에|중으로|중에|쯤)")
-    private val FOLLOW_UP_WORD = Regex("견적|회신|연락|전화|발송|보내|제출|방문|미팅|회의|전달|검토|계약|납품|샘플|자료|답변|확인|재방문|통화")
+    private val FOLLOW_UP_WORD = Regex("견적|회신|연락|전화|발송|보내|제출|방문|미팅|회의|전달|검토|계약|납품|샘플|자료|답변|확인|재방문|통화|다시|입금|결제")
     private val FOLLOW_UP_PROMISE = Regex("기로|예정|드려야|해야|하자고")
     private const val FOLLOW_UP_MAX_WORDS = 3
     private const val SUMMARY_MAX = 20
 
-    private val LEADING = Regex("^(만나서|만나고|와서|가서|오늘은|오늘|방금|그래서|일단)\\s+")
+    private val LEADING = Regex(
+        "^(만나서|만나고|만났는데|와서|가서|방문해서|다녀와서|다녀왔습니다|다녀왔어요|다녀왔어|오늘은|오늘|방금|오전에|오후에|아침에|점심에|저녁에|낮에|그래서|일단)\\s+",
+    )
     private val TRAILING = Regex(
-        "\\s*(하고\\s?왔어요|하고\\s?왔어|하고\\s?옴|했습니다|했어요|했어|했음|했다|함|하였음|진행|완료|있었어요|있었음|입니다|이에요|예요|요)$",
+        "\\s*(하고\\s?왔어요|하고\\s?왔어|하고\\s?옴|다녀왔습니다|다녀왔어요|다녀왔어|다녀옴|끝났습니다|끝났어요|끝났어|드렸습니다|드렸어요|드렸어|" +
+            "했습니다|했어요|했어|했음|했고요|했고|했다|함|하였음|진행|완료|있었어요|있었음|입니다|이에요|예요|" +
+            "(?:좀\\s?더\\s?)?(?:해야|드려야)\\s?(?:돼요|돼|해요|해|됨|합니다)|하고|(?<!게)요)$",
     )
 
     private fun clean(s: String): String {
         var t = s.trim()
         t = t.replace(Regex("하기로.*$"), "").replace(Regex("기로.*$"), "기")
             .replace(Regex("\\s*(할|하실|드릴)?\\s*예정.*$"), "")
-        repeat(2) { t = t.replace(LEADING, "").replace(TRAILING, "").trim() }
+        repeat(3) { t = t.replace(LEADING, "").replace(TRAILING, "").trim() }
         return t
     }
 
@@ -159,7 +169,10 @@ internal object DateFinder {
     private val MONTH_DAY = Regex("(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일")
     private val WEEK_DAY = Regex("(이번|다음|담|다다음)\\s*주\\s*([월화수목금토일])(?:요일)?")
     private val IN_DAYS = Regex("(\\d{1,2})\\s*일\\s*(?:후|뒤)")
-    private val RELATIVE = Regex("(?<![가-힣])(오늘|내일|모레|글피)")
+    private val NEXT_MONTH_DAY = Regex("(?<![가-힣])(?:다음|담)\\s*달\\s*(\\d{1,2})\\s*일")
+    private val MONTH_END = Regex("(?<![가-힣])(이번|이|다음|담)\\s*달\\s*말")
+    private val RELATIVE = Regex("(?<![가-힣])(내일모레|오늘|내일|모레|글피)")
+    private val RELATIVE_DAYS = mapOf("오늘" to 0L, "내일" to 1L, "내일모레" to 2L, "모레" to 2L, "글피" to 3L)
     private val BARE_WEEKDAY = Regex("(?<![가-힣])([월화수목금토일])요일")
     private val BARE_DAY = Regex("(?<![\\d월])(\\d{1,2})\\s*일(?=\\s|까지|에|$)")
 
@@ -169,6 +182,14 @@ internal object DateFinder {
             val date = runCatching { LocalDate.of(today.year, m.int(1), m.int(2)) }.getOrNull() ?: return@let
             return Match(if (date.isBefore(today)) date.plusYears(1) else date, m.range)
         }
+        NEXT_MONTH_DAY.find(text)?.let { m ->
+            val date = runCatching { today.plusMonths(1).withDayOfMonth(m.int(1)) }.getOrNull() ?: return@let
+            return Match(date, m.range)
+        }
+        MONTH_END.find(text)?.let { m ->
+            val month = if (m.groupValues[1] == "이번" || m.groupValues[1] == "이") today else today.plusMonths(1)
+            return Match(month.with(TemporalAdjusters.lastDayOfMonth()), m.range)
+        }
         WEEK_DAY.find(text)?.let { m ->
             val weeks = when (m.groupValues[1]) { "이번" -> 0L; "다다음" -> 2L; else -> 1L }
             val dow = DayOfWeek.of(WEEKDAY.getValue(m.groupValues[2][0]))
@@ -176,7 +197,7 @@ internal object DateFinder {
         }
         IN_DAYS.find(text)?.let { m -> return Match(today.plusDays(m.int(1).toLong()), m.range) }
         RELATIVE.find(text)?.let { m ->
-            val days = listOf("오늘", "내일", "모레", "글피").indexOf(m.groupValues[1]).toLong()
+            val days = RELATIVE_DAYS.getValue(m.groupValues[1])
             if (days > 0 || includeToday) return Match(today.plusDays(days), m.range)
         }
         BARE_WEEKDAY.find(text)?.let { m ->
