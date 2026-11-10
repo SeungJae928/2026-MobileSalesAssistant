@@ -7,6 +7,7 @@ import com.salesdrive.trip.TripPhase
 import com.salesdrive.trip.TripRecorder
 import com.salesdrive.vehicle.Gear
 import com.salesdrive.vehicle.SeatMemory
+import com.salesdrive.voice.TodayBriefer
 import com.salesdrive.voice.VoicePrompter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,6 +41,7 @@ class SeatRestorer @Inject constructor(
     private val profiles: ProfileRepository,
     private val seat: SeatMemory,
     private val voice: VoicePrompter,
+    private val todayBriefer: TodayBriefer,
 ) {
     private val _last = MutableStateFlow<SeatRecall?>(null)
     val last: StateFlow<SeatRecall?> = _last.asStateFlow()
@@ -48,12 +50,13 @@ class SeatRestorer @Inject constructor(
 
     suspend fun supportedSlots(): IntRange? = seat.supportedSlots()
 
-    /** 서비스 코루틴에서 호출 */
+    /** 서비스 코루틴에서 호출. 두 안내가 겹치지 않도록 시트를 맞춘 뒤 오늘 일정을 읽는다 */
     suspend fun run() {
         var previous: TripPhase? = null
         recorder.state.collect { state ->
             if (shouldRecallSeat(previous, state)) {
                 profiles.me().seatMemorySlot?.let { recall(it, announce = true) }
+                todayBriefer.announceOnce()
             }
             previous = state.trip.phase
         }

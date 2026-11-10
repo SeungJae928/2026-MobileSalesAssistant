@@ -9,6 +9,7 @@ import com.salesdrive.voice.ArrivalBriefer
 import com.salesdrive.voice.Briefing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
@@ -25,6 +26,9 @@ class ScheduleRepository @Inject constructor(
     suspend fun save(schedule: Schedule): Long = schedules.insert(schedule)
 
     suspend fun delete(id: Long) = schedules.delete(id)
+
+    suspend fun eventsOn(date: LocalDate): List<CalendarEvent> =
+        observeMonth(YearMonth.from(date)).first()[date].orEmpty()
 
     fun observeUpcoming(from: LocalDate, limit: Int): Flow<List<CalendarEvent>> =
         combine(schedules.observeUpcoming(from, limit), visits.observeUpcoming(from, limit)) { plans, followUps ->
