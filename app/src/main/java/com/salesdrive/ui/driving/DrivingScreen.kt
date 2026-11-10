@@ -3,6 +3,10 @@ package com.salesdrive.ui.driving
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,7 +53,7 @@ fun DrivingScreen() {
             verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("🚗", style = MaterialTheme.typography.displayLarge)
+            Icon(Icons.Filled.LocationOn, contentDescription = null, Modifier.size(96.dp), tint = MaterialTheme.colorScheme.onSurface)
             Text("주행 기록 중", style = MaterialTheme.typography.displayMedium)
             Text(
                 "도착하면 음성으로 방문 내용을 여쭤볼게요",
