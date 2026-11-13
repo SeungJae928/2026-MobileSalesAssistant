@@ -14,6 +14,9 @@ val localProps = Properties().apply {
 }
 fun localProp(key: String) = "\"${localProps.getProperty(key, "")}\""
 
+// release 서명 키. 키 파일 경로와 비밀번호도 local.properties에만 둔다. 없으면 서명하지 않은 APK가 나온다
+val releaseStore = localProps.getProperty("release.storeFile")?.let(::file)?.takeIf { it.exists() }
+
 android {
     namespace = "com.salesdrive"
     compileSdk = 35
@@ -30,9 +33,22 @@ android {
         buildConfigField("String", "PLEOS_CLIENT_SECRET", localProp("pleos.clientSecret"))
     }
 
+    signingConfigs {
+        if (releaseStore != null) create("release") {
+            storeFile = releaseStore
+            storePassword = localProps.getProperty("release.storePassword")
+            keyAlias = localProps.getProperty("release.keyAlias")
+            keyPassword = localProps.getProperty("release.keyPassword")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+            // 공개 저장소에 올리는 APK라 Pleos 키를 넣지 않는다. 음성 인식은 On-device, 방문 정리는 규칙 기반으로 동작
+            buildConfigField("String", "PLEOS_CLIENT_ID", "\"\"")
+            buildConfigField("String", "PLEOS_CLIENT_SECRET", "\"\"")
         }
     }
 

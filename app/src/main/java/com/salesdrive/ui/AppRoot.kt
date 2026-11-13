@@ -35,7 +35,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.salesdrive.BuildConfig
 import com.salesdrive.ui.calendar.CalendarScreen
 import com.salesdrive.ui.driving.DrivingScreen
 import com.salesdrive.ui.driving.DrivingViewModel
@@ -52,9 +51,6 @@ enum class Tab(val label: String, val icon: ImageVector) {
     PROFILE("내 정보", Icons.Filled.Person),
     SIGNAL("신호 확인", Icons.Filled.Build),
 }
-
-/** 신호 확인은 개발 점검과 시연 주행 재생용이라 출시 빌드에서는 숨긴다 */
-private val VISIBLE_TABS = Tab.entries.filter { BuildConfig.DEBUG || it != Tab.SIGNAL }
 
 /**
  * 왼쪽 탭 + 본문. 주행 기록을 하나 고르면 본문 자리에 방문 기록 확인 화면이 뜬다.
@@ -101,7 +97,7 @@ private fun SideBar(current: Tab?, onSelect: (Tab) -> Unit) {
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .selectableGroup(),
     ) {
-        VISIBLE_TABS.forEachIndexed { i, t ->
+        Tab.entries.forEachIndexed { i, t ->
             if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             SideTab(t, t == current, Modifier.weight(1f)) { onSelect(t) }
         }
